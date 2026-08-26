@@ -4,22 +4,18 @@ import { Incident } from '../models/incident.model.js';
 import { User } from '../models/user.model.js';
 import { ChatMessage } from '../models/chatMessage.model.js';
 import { findUsersNear, updateUserLocation, findNearbyServices } from '../controllers/geospatial.controller.js';
-import { generateCrisisGuidance } from '../services/ai/crisisGuidance.service.js';
-import { generateEmergencySummary } from '../services/ai/emergencySummary.service.js';
 import { generateDebriefQuestions } from '../services/ai/debriefPrompt.service.js';
 import { hasRelevantSkill, getTopMatchedSkill } from '../utils/skillMatch.js';
+import { createAndBroadcastIncident } from '../services/incident/createAndBroadcastIncident.js';
 
 let io;
 // In-memory store mapping userId -> socketId
 const connectedUsers = new Map();
+export const getConnectedUsers = () => connectedUsers;
 
 // Throttle map for responder:location — key: `${incidentId}:${userId}`, value: last timestamp
 const locationThrottleMap = new Map();
 const LOCATION_THROTTLE_MS = 3000; // 3 seconds
-
-// Throttle map for sos:trigger — key: userId, value: last timestamp
-const triggerThrottleMap = new Map();
-const TRIGGER_THROTTLE_MS = 30000; // 30 seconds
 
 export const initSocket = (server) => {
   io = new Server(server, {
@@ -69,127 +65,34 @@ export const initSocket = (server) => {
     socket.on('sos:trigger', async (payload) => {
       try {
         const { crisisType, location, radius, isAnonymous, details } = payload;
-        
-        // 1. Identity from JWT
         const broadcasterId = userId;
 
-        // Trust check: load user to see if they are suspended
-        const userDoc = await User.findById(broadcasterId).select('trust');
-        if (userDoc?.trust?.isSuspended) {
-          return socket.emit('error', { code: 'SUSPENDED', message: 'Your account is suspended due to excessive false alerts. You cannot trigger SOS.' });
-        }
-
-        // Basic Rate Limiting: 30s per user
-        const lastTrigger = triggerThrottleMap.get(broadcasterId);
-        if (lastTrigger && Date.now() - lastTrigger < TRIGGER_THROTTLE_MS) {
-          return socket.emit('error', { code: 'RATE_LIMIT', message: 'Please wait before triggering another SOS.' });
-        }
-        triggerThrottleMap.set(broadcasterId, Date.now());
-
-        // Duplicate SOS Prevention
-        const existingActive = await Incident.findOne({ broadcaster: broadcasterId, status: 'active' });
-        if (existingActive) {
-          return socket.emit('error', { code: 'DUPLICATE_SOS', message: 'You already have an active SOS.' });
-        }
-        
-        // 2. Create Incident
-        const incident = await Incident.create({
-          broadcaster: broadcasterId,
+        const { incident, emitPayload, notifiedCount } = await createAndBroadcastIncident({
+          io,
+          connectedUsers,
+          broadcasterUserId: broadcasterId,
           crisisType,
-          location: { type: 'Point', coordinates: [location.lng, location.lat] },
-          radius: radius || 1000,
-          isAnonymous: isAnonymous || false,
-          details: details || '',
+          location,
+          radiusMeters: radius,
+          details,
+          isAnonymous,
+          source: 'socket',
         });
 
-        const broadcasterUser = await User.findById(broadcasterId);
-
-        // 3. Find nearby users
-        const nearbyUsers = await findUsersNear(location.lng, location.lat, incident.radius);
-
-        // 4. Build payload with PII stripping
-        const basePayload = {
-          incidentId: incident._id,
-          crisisType: incident.crisisType,
-          location: incident.location,
-          isAnonymous: incident.isAnonymous,
-          radius: incident.radius,
-          createdAt: incident.createdAt,
-        };
-
-        let emitPayload;
-        if (incident.isAnonymous) {
-          emitPayload = {
-            ...basePayload,
-            broadcasterName: 'Anonymous reporter',
-          };
-        } else {
-          emitPayload = {
-            ...basePayload,
-            broadcasterName: broadcasterUser.name,
-            broadcasterAvatar: broadcasterUser.avatarUrl,
-          };
-        }
-
-        // 5. Emit sos:new to nearby connected users
-        let notifiedCount = 0;
-        nearbyUsers.forEach((u) => {
-          // Don't send to self
-          if (u._id.toString() !== broadcasterId.toString()) {
-            const nearbySocketId = connectedUsers.get(u._id.toString());
-            if (nearbySocketId) {
-              io.to(nearbySocketId).emit('sos:new', emitPayload);
-              notifiedCount++;
-            }
-          }
-        });
-
-        // 6. Join broadcaster to room
+        // Join broadcaster to room
         socket.join(`incident:${incident._id}`);
 
-        // 7. Emit success back to broadcaster
+        // Emit success back to broadcaster
         socket.emit('sos:triggered', { ...emitPayload, notifiedCount });
         console.log(`SOS triggered by ${broadcasterId}, notified ${notifiedCount} users`);
 
-        // Phase 3: AI generation — runs AFTER fan-out, never blocks broadcast
-        (async () => {
-          try {
-            const [guidanceResult, summaryResult] = await Promise.all([
-              generateCrisisGuidance({ crisisType, details: incident.details }),
-              generateEmergencySummary({
-                crisisType,
-                location: { lng: location.lng, lat: location.lat },
-                details: incident.details,
-                radius: incident.radius,
-                responderCount: 0,
-              }),
-              findNearbyServices(location.lng, location.lat, incident.radius, 3), // Get top 3 nearby services
-            ]);
-            
-            incident.aiGuidance = guidanceResult;
-            incident.aiSummary = summaryResult;
-            incident.nearbyServices = nearbyServicesResult.map(s => ({
-              name: s.name,
-              type: s.type,
-              phone: s.phone,
-              coordinates: s.location.coordinates,
-            }));
-            await incident.save();
-
-            io.to(`incident:${incident._id}`).emit('sos:ai_ready', {
-              incidentId: incident._id,
-              aiGuidance: guidanceResult,
-              aiSummary: summaryResult,
-              nearbyServices: incident.nearbyServices,
-            });
-          } catch (err) {
-            console.error('AI generation failed (non-blocking):', err);
-          }
-        })();
-
       } catch (err) {
-        console.error('Error in sos:trigger:', err);
-        socket.emit('error', { code: 'SOS_ERROR', message: err.message });
+        if (err.code) {
+          socket.emit('error', { code: err.code, message: err.message });
+        } else {
+          console.error('Error in sos:trigger:', err);
+          socket.emit('error', { code: 'SOS_ERROR', message: err.message });
+        }
       }
     });
 
