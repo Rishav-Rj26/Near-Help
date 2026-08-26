@@ -170,6 +170,19 @@ class SocketService {
       this.socket.on('error', callback);
     }
   }
+
+  // ── Connection state listeners ──
+  onReconnect(callback) {
+    if (this.socket) {
+      this.socket.io.on('reconnect', callback);
+    }
+  }
+
+  offReconnect(callback) {
+    if (this.socket) {
+      this.socket.io.off('reconnect', callback);
+    }
+  }
 }
 
 export const socketService = new SocketService();

@@ -117,13 +117,43 @@ export default function MapPage() {
       }
     });
 
+    socketService.onError((error) => {
+      if (error.code === 'DUPLICATE_SOS') {
+        alert(error.message || 'You already have an active SOS.');
+      } else if (error.code === 'SUSPENDED') {
+        alert(error.message || 'Your account is suspended.');
+      } else if (error.code === 'RATE_LIMIT') {
+        alert(error.message || 'Please wait before triggering another SOS.');
+      }
+    });
+
+    // Handle reconnection by re-fetching incidents and re-joining room if active
+    const handleReconnect = async () => {
+      console.log('Socket reconnected, refreshing state...');
+      if (location.lat && location.lng) {
+        try {
+          const { data } = await fetchNearbyIncidents(location.lng, location.lat, 5000);
+          setIncidents(data);
+          
+          // Re-join the active incident room if we were looking at one
+          if (selectedIncident) {
+            socketService.joinAsResponder(selectedIncident.incidentId || selectedIncident._id);
+          }
+        } catch (err) {
+          console.error('Failed to re-fetch incidents on reconnect', err);
+        }
+      }
+    };
+    socketService.onReconnect(handleReconnect);
+
     return () => {
       socketService.offSOSNew();
       socketService.offSOSTriggered();
       socketService.offDebriefReady();
+      socketService.offReconnect(handleReconnect);
       if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
     };
-  }, [user, navigate]);
+  }, [user, navigate, location, selectedIncident]);
 
   // Phase 2: Location sharing loop for responders
   useEffect(() => {
@@ -182,6 +212,12 @@ export default function MapPage() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
         <RecenterAutomatically lat={location.lat} lng={location.lng} />
+
+        {(!location.lat || !location.lng || (location.lat === 28.6139 && location.lng === 77.2090)) && (
+          <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(255,255,255,0.9)', padding: '8px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
+            Showing default location (Enable GPS for accuracy)
+          </div>
+        )}
 
         {incidents.map((incident) => (
           <PulsingPinMarker 

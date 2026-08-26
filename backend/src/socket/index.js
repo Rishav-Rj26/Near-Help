@@ -17,10 +17,14 @@ const connectedUsers = new Map();
 const locationThrottleMap = new Map();
 const LOCATION_THROTTLE_MS = 3000; // 3 seconds
 
+// Throttle map for sos:trigger — key: userId, value: last timestamp
+const triggerThrottleMap = new Map();
+const TRIGGER_THROTTLE_MS = 30000; // 30 seconds
+
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: '*', // Adjust for production
+      origin: process.env.FRONTEND_URL || 'http://localhost:5173',
       methods: ['GET', 'POST'],
     },
   });
@@ -73,6 +77,19 @@ export const initSocket = (server) => {
         const userDoc = await User.findById(broadcasterId).select('trust');
         if (userDoc?.trust?.isSuspended) {
           return socket.emit('error', { code: 'SUSPENDED', message: 'Your account is suspended due to excessive false alerts. You cannot trigger SOS.' });
+        }
+
+        // Basic Rate Limiting: 30s per user
+        const lastTrigger = triggerThrottleMap.get(broadcasterId);
+        if (lastTrigger && Date.now() - lastTrigger < TRIGGER_THROTTLE_MS) {
+          return socket.emit('error', { code: 'RATE_LIMIT', message: 'Please wait before triggering another SOS.' });
+        }
+        triggerThrottleMap.set(broadcasterId, Date.now());
+
+        // Duplicate SOS Prevention
+        const existingActive = await Incident.findOne({ broadcaster: broadcasterId, status: 'active' });
+        if (existingActive) {
+          return socket.emit('error', { code: 'DUPLICATE_SOS', message: 'You already have an active SOS.' });
         }
         
         // 2. Create Incident

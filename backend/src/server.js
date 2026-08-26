@@ -15,7 +15,10 @@ const app = express();
 const httpServer = createServer(app);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+}));
 app.use(express.json());
 
 // Routes
