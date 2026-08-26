@@ -1,121 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { styled } from '../../styles/theme';
 import { useAuth } from '../../context/AuthContext';
 import { socketService } from '../../services/socket';
 
-import { TicketCard, TicketLabel, TicketNumber } from '../ui/TicketCard.stitch';
-import { CrisisTag, TriageTag } from '../ui/TriageTag.stitch';
-import { Button } from '../ui/Button.stitch';
 import ChatThread from './ChatThread';
 import CrisisGuidanceCard from './CrisisGuidanceCard';
 import EmergencySummaryCard from './EmergencySummaryCard';
 
-const PanelOverlay = styled('div', {
-  position: 'fixed',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  zIndex: 1100,
-  maxHeight: '85vh',
-  overflowY: 'auto',
-  borderRadius: '$lg $lg 0 0',
-  boxShadow: '0 -4px 24px rgba(11, 31, 51, 0.25)',
-});
+const CRISIS_COLORS = {
+  medical: 'bg-blue-500',
+  fire: 'bg-red-500',
+  gas_leak: 'bg-orange-500',
+  accident: 'bg-purple-500',
+  threat: 'bg-rose-800',
+  other: 'bg-slate-500',
+};
 
-const Header = styled('div', {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  marginBottom: '$md',
-});
-
-const CloseButton = styled('button', {
-  background: 'none',
-  border: 'none',
-  fontSize: '22px',
-  cursor: 'pointer',
-  color: '$slate',
-  padding: '$xs',
-  lineHeight: 1,
-});
-
-const BroadcasterRow = styled('div', {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '$sm',
-  padding: '$sm 0',
-  borderTop: '1px solid rgba(11, 31, 51, 0.1)',
-  borderBottom: '1px solid rgba(11, 31, 51, 0.1)',
-  marginBottom: '$md',
-  fontSize: '$subtitle',
-});
-
-const SectionTitle = styled('div', {
-  fontSize: '$caption',
-  color: '$slate',
-  letterSpacing: '0.5px',
-  textTransform: 'uppercase',
-  marginBottom: '$xs',
-  marginTop: '$md',
-});
-
-const ResponderListItem = styled('div', {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '$sm $md',
-  backgroundColor: '$surfaceLight',
-  borderRadius: '$md',
-  marginBottom: '$sm',
-  fontSize: '$subtitle',
-  cursor: 'pointer',
-  transition: 'background-color 200ms ease',
-  '&:hover': { backgroundColor: '#ECF0E8' },
-});
-
-const ChatSection = styled('div', {
-  marginTop: '$md',
-  borderTop: '1px solid rgba(11, 31, 51, 0.1)',
-  paddingTop: '$md',
-});
-
-/**
- * ActiveIncidentPanel
- * 
- * Renders in two modes:
- * - broadcaster: sees responders list, per-responder chat, resolve button
- * - responder: sees incident info, "I'm Responding" or chat if already joined
- */
 export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
   const { user } = useAuth();
   const [responders, setResponders] = useState(incident.responders || []);
   const [hasJoined, setHasJoined] = useState(false);
   const [activeChatResponderId, setActiveChatResponderId] = useState(null);
   
-  // Phase 3 AI & Phase 4 Services State
   const [aiGuidance, setAiGuidance] = useState(incident.aiGuidance || null);
   const [aiSummary, setAiSummary] = useState(incident.aiSummary || null);
   const [nearbyServices, setNearbyServices] = useState(incident.nearbyServices || []);
   const [aiLoading, setAiLoading] = useState(!incident.aiGuidance);
 
   const incidentId = incident.incidentId || incident._id;
-  const isBroadcaster = incident.broadcaster?.toString() === user?.id ||
-                         incident.broadcaster === user?.id;
+  const isBroadcaster = incident.broadcaster?.toString() === user?.id || incident.broadcaster === user?.id;
 
-  // Check if current user already joined as responder
   useEffect(() => {
     const alreadyResponder = responders.some(
       (r) => (r.user?.toString() === user?.id) || (r.user === user?.id) || (r.id === user?.id)
     );
     setHasJoined(alreadyResponder);
 
-    // If user is a responder, auto-open their chat thread
     if (alreadyResponder && !isBroadcaster) {
       setActiveChatResponderId(user.id);
     }
   }, [responders, user, isBroadcaster]);
 
-  // Listen for new responders joining
   useEffect(() => {
     const handleResponderJoined = (data) => {
       if (data.incidentId === incidentId) {
@@ -128,12 +52,10 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
         });
       }
     };
-
     socketService.onResponderJoined(handleResponderJoined);
     return () => socketService.offResponderJoined(handleResponderJoined);
   }, [incidentId]);
 
-  // Listen for resolve
   useEffect(() => {
     const handleResolved = (data) => {
       if (data.incidentId === incidentId) {
@@ -141,12 +63,10 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
         onClose?.();
       }
     };
-
     socketService.onSOSResolved(handleResolved);
     return () => socketService.offSOSResolved(handleResolved);
   }, [incidentId, onResolved, onClose]);
 
-  // Phase 3: Listen for AI ready event
   useEffect(() => {
     const handleAIReady = (data) => {
       if (data.incidentId === incidentId) {
@@ -156,7 +76,6 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
         setAiLoading(false);
       }
     };
-
     socketService.onAIReady(handleAIReady);
     return () => socketService.offAIReady(handleAIReady);
   }, [incidentId]);
@@ -172,77 +91,94 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
   };
 
   const ticketNum = incidentId?.toString().slice(-3) || '000';
+  const radiusLabel = incident.radius >= 1000 ? `${incident.radius / 1000}km` : `${incident.radius}m`;
+  const typeColor = CRISIS_COLORS[incident.crisisType] || CRISIS_COLORS.other;
 
   return (
-    <PanelOverlay>
-      <TicketCard>
-        <Header>
-          <CloseButton onClick={onClose} aria-label="Close panel">&times;</CloseButton>
-          <TicketNumber>TICKET #{ticketNum}</TicketNumber>
-        </Header>
-
-        <div style={{ marginBottom: '14px' }}>
-          <CrisisTag
-            crisisType={incident.crisisType}
-            radiusLabel={incident.radius >= 1000 ? `${incident.radius / 1000}km` : `${incident.radius}m`}
-          />
+    <div className="fixed bottom-0 left-0 right-0 z-[1100] max-h-[85vh] overflow-y-auto bg-slate-900 border-t-[3px] border-white shadow-[0_-8px_0px_0px_rgba(255,255,255,0.1)] p-4 sm:p-6 transition-transform animate-in slide-in-from-bottom">
+      <div className="max-w-2xl mx-auto flex flex-col gap-4">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between border-b-2 border-slate-700 pb-4">
+          <span className="font-mono font-bold text-white uppercase tracking-widest">Ticket #{ticketNum}</span>
+          <button onClick={onClose} className="text-3xl text-slate-400 hover:text-white leading-none">&times;</button>
         </div>
 
-        <BroadcasterRow>
-          <span aria-hidden="true">&#128065;</span>
-          <span>
-            {incident.isAnonymous ? 'Anonymous reporter' : (incident.broadcasterName || 'Reporter')}
-          </span>
-        </BroadcasterRow>
-
-        {/* Responders section */}
-        <SectionTitle>Responders &middot; {responders.length}</SectionTitle>
-        {responders.length === 0 && (
-          <div style={{ fontSize: '13px', color: '#5B6B7C', padding: '8px 0' }}>
-            No responders yet
+        {/* Tags & Reporter */}
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2">
+            <span className={`px-2 py-1 text-xs font-black uppercase tracking-widest text-white ${typeColor}`}>
+              {incident.crisisType.replace('_', ' ')}
+            </span>
+            <span className="px-2 py-1 text-xs font-black uppercase tracking-widest border border-slate-600 text-slate-400">
+              {radiusLabel}
+            </span>
           </div>
-        )}
-        {responders.map((r) => {
-          const rId = r.id || r.user?.toString() || r.user;
-          const rName = r.name || 'Responder';
-          return (
-            <ResponderListItem
-              key={rId}
-              onClick={() => isBroadcaster && setActiveChatResponderId(rId)}
-            >
-              <span>{rName}</span>
-              {r.hasRelevantSkill && r.topSkill && <TriageTag tone="skill">{r.topSkill}</TriageTag>}
-              {r.hasRelevantSkill && !r.topSkill && <TriageTag tone="skill">Skilled</TriageTag>}
-            </ResponderListItem>
-          );
-        })}
+          <div className="flex items-center gap-2 text-sm font-bold text-white py-2 border-b border-slate-800">
+            <span>&#128065;</span>
+            <span>{incident.isAnonymous ? 'Anonymous reporter' : (incident.broadcasterName || 'Reporter')}</span>
+          </div>
+        </div>
 
-        {/* Phase 3: AI Crisis Assistant */}
+        {/* Responders */}
+        <div>
+          <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-slate-400 mb-2 mt-4">
+            Responders &middot; {responders.length}
+          </h3>
+          {responders.length === 0 && (
+            <div className="text-sm font-mono text-slate-500 py-2">No responders yet</div>
+          )}
+          <div className="flex flex-col gap-2">
+            {responders.map((r) => {
+              const rId = r.id || r.user?.toString() || r.user;
+              const rName = r.name || 'Responder';
+              return (
+                <div 
+                  key={rId}
+                  onClick={() => isBroadcaster && setActiveChatResponderId(rId)}
+                  className={`flex items-center justify-between p-3 bg-slate-950 border border-slate-800 transition-colors ${isBroadcaster ? 'cursor-pointer hover:border-slate-500' : ''}`}
+                >
+                  <span className="font-bold text-white text-sm">{rName}</span>
+                  {r.hasRelevantSkill && (
+                    <span className="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500 text-xs font-black uppercase tracking-widest">
+                      {r.topSkill || 'Skilled'}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* AI & Services */}
         <CrisisGuidanceCard steps={aiGuidance?.steps} loading={aiLoading} />
         {!aiLoading && aiSummary && <EmergencySummaryCard summary={aiSummary?.summary} />}
 
-        {/* Phase 4: Nearby Services */}
         {!aiLoading && nearbyServices.length > 0 && (
-          <div style={{ marginTop: '16px', marginBottom: '16px' }}>
-            <SectionTitle style={{ marginTop: 0 }}>Nearby Services</SectionTitle>
-            {nearbyServices.map((service, idx) => (
-              <div key={idx} style={{ padding: '8px', backgroundColor: '#F8F9FA', borderRadius: '4px', marginBottom: '8px', fontSize: '13px' }}>
-                <div style={{ fontWeight: 600 }}>{service.name}</div>
-                <div style={{ color: '#5B6B7C', display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                  <span style={{ textTransform: 'capitalize' }}>{service.type.replace('_', ' ')}</span>
-                  <span>{service.phone || 'No phone'}</span>
+          <div>
+            <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-slate-400 mb-2 mt-4">
+              Nearby Services
+            </h3>
+            <div className="flex flex-col gap-2">
+              {nearbyServices.map((service, idx) => (
+                <div key={idx} className="p-3 bg-slate-950 border border-slate-800 text-sm">
+                  <div className="font-bold text-white">{service.name}</div>
+                  <div className="flex justify-between mt-1 font-mono text-xs text-slate-400">
+                    <span className="uppercase">{service.type.replace('_', ' ')}</span>
+                    <span>{service.phone || 'No phone'}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Chat thread */}
+        {/* Chat Thread */}
         {activeChatResponderId && (
-          <ChatSection>
-            <TicketLabel>
+          <div className="mt-4 pt-4 border-t-2 border-slate-800">
+            <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-slate-400 mb-2">
               Chat {isBroadcaster ? `with responder` : 'with broadcaster'}
-            </TicketLabel>
+            </h3>
             <ChatThread
               incidentId={incidentId}
               responderId={activeChatResponderId}
@@ -250,22 +186,28 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
               isAnonymous={incident.isAnonymous}
               broadcasterId={incident.broadcaster?.toString() || incident.broadcaster}
             />
-          </ChatSection>
+          </div>
         )}
 
-        {/* Action button */}
-        <div style={{ marginTop: '16px' }}>
+        {/* Actions */}
+        <div className="mt-4">
           {isBroadcaster ? (
-            <Button intent="resolve" size="block" onClick={handleResolve}>
-              Mark resolved
-            </Button>
+            <button 
+              onClick={handleResolve}
+              className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-black text-sm tracking-widest uppercase border-[3px] border-green-600 hover:border-white transition-all"
+            >
+              Mark Resolved
+            </button>
           ) : !hasJoined ? (
-            <Button intent="respond" size="block" onClick={handleJoin}>
+            <button 
+              onClick={handleJoin}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-black text-sm tracking-widest uppercase border-[3px] border-blue-600 hover:border-white transition-all"
+            >
               I'm Responding
-            </Button>
+            </button>
           ) : null}
         </div>
-      </TicketCard>
-    </PanelOverlay>
+      </div>
+    </div>
   );
 }

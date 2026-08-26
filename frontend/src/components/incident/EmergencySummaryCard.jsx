@@ -1,63 +1,16 @@
-import React, { useState } from 'react';
-import { styled } from '../../styles/theme';
-import { TicketLabel } from '../ui/TicketCard.stitch';
-
-const SummaryContainer = styled('div', {
-  backgroundColor: '$surfaceLight',
-  borderRadius: '$md',
-  padding: '$sm $md',
-  marginBottom: '$md',
-  position: 'relative',
-});
-
-const SummaryText = styled('p', {
-  fontSize: '$subtitle',
-  color: '$ink',
-  lineHeight: 1.5,
-  margin: 0,
-});
-
-const CopyButton = styled('button', {
-  position: 'absolute',
-  top: '$sm',
-  right: '$sm',
-  background: 'none',
-  border: '1px solid #E8EAED',
-  borderRadius: '$sm',
-  padding: '4px 8px',
-  fontSize: '10px',
-  fontFamily: '$mono',
-  color: '$slate',
-  cursor: 'pointer',
-  transition: 'all 0.2s',
-  '&:hover': {
-    backgroundColor: '#E8EAED',
-    color: '$ink',
-  },
-});
+import React from 'react';
 
 export default function EmergencySummaryCard({ summary }) {
-  const [copied, setCopied] = useState(false);
-
   if (!summary) return null;
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(summary);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-  };
-
+  
   return (
-    <SummaryContainer>
-      <TicketLabel>Emergency Summary (For Dispatcher)</TicketLabel>
-      <SummaryText>{summary}</SummaryText>
-      <CopyButton onClick={handleCopy}>
-        {copied ? 'COPIED!' : 'COPY'}
-      </CopyButton>
-    </SummaryContainer>
+    <div className="bg-blue-900/20 border-[3px] border-blue-800 p-4 shadow-[4px_4px_0px_0px_rgba(30,58,138,1)] mb-4 mt-4 relative">
+      <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest text-blue-400 mb-2 absolute -top-3 left-4 bg-slate-900 px-2 border-2 border-blue-800">
+        Live AI Summary
+      </h3>
+      <p className="text-sm text-blue-100 leading-relaxed mt-2 font-mono">
+        {summary}
+      </p>
+    </div>
   );
 }

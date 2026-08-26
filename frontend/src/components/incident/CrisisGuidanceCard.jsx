@@ -1,76 +1,30 @@
 import React from 'react';
-import { styled, keyframes } from '../../styles/theme';
-import { TicketLabel } from '../ui/TicketCard.stitch';
-
-const pulse = keyframes({
-  '0%': { opacity: 0.6 },
-  '50%': { opacity: 1 },
-  '100%': { opacity: 0.6 },
-});
-
-const GuidanceContainer = styled('div', {
-  backgroundColor: '$surfaceLight',
-  borderRadius: '$md',
-  padding: '$sm $md',
-  marginBottom: '$md',
-});
-
-const GuidanceStep = styled('div', {
-  fontSize: '$subtitle',
-  color: '$ink',
-  lineHeight: 1.6,
-  marginBottom: '$xs',
-  '&:last-child': {
-    marginBottom: 0,
-  },
-  '& span': {
-    fontFamily: '$mono',
-    color: '$crisisMedical',
-    marginRight: '$xs',
-  },
-});
-
-const LoadingState = styled('div', {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '$xs',
-  animation: `${pulse} 1.5s ease-in-out infinite`,
-});
-
-const SkeletonLine = styled('div', {
-  height: '14px',
-  backgroundColor: '#E8EAED',
-  borderRadius: '2px',
-  variants: {
-    width: {
-      full: { width: '100%' },
-      long: { width: '85%' },
-      short: { width: '60%' },
-    }
-  },
-  defaultVariants: {
-    width: 'full'
-  }
-});
 
 export default function CrisisGuidanceCard({ steps, loading }) {
   return (
-    <GuidanceContainer>
-      <TicketLabel>AI first-response guidance</TicketLabel>
+    <div className="bg-slate-950 border-[3px] border-slate-700 p-4 shadow-[4px_4px_0px_0px_rgba(51,65,85,1)] mb-4 mt-4 relative">
+      <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 mb-3 absolute -top-3 left-4 bg-slate-900 px-2 border-2 border-slate-700">
+        AI First-Response Guidance
+      </h3>
+      
       {loading ? (
-        <LoadingState>
-          <SkeletonLine width="full" />
-          <SkeletonLine width="long" />
-          <SkeletonLine width="short" />
-        </LoadingState>
+        <div className="flex flex-col gap-3 animate-pulse mt-3">
+          <div className="h-4 bg-slate-800 rounded-none w-full"></div>
+          <div className="h-4 bg-slate-800 rounded-none w-[85%]"></div>
+          <div className="h-4 bg-slate-800 rounded-none w-[60%]"></div>
+        </div>
       ) : (
-        steps?.map((step, i) => (
-          <GuidanceStep key={i}>
-            <span>{String(i + 1).padStart(2, '0')}</span>
-            {step}
-          </GuidanceStep>
-        ))
+        <div className="flex flex-col gap-3 mt-3">
+          {steps?.map((step, i) => (
+            <div key={i} className="text-sm text-slate-200 leading-relaxed flex gap-3 items-start">
+              <span className="font-mono text-blue-400 font-bold shrink-0 pt-0.5">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <span>{step}</span>
+            </div>
+          ))}
+        </div>
       )}
-    </GuidanceContainer>
+    </div>
   );
 }

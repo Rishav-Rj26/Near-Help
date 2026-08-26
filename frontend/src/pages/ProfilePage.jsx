@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { styled } from '../styles/theme';
 import { useAuth } from '../context/AuthContext';
 import { fetchCurrentUser, updateUserSkills } from '../services/api';
-import { Button } from '../components/ui/Button.stitch';
-import { TriageTag } from '../components/ui/TriageTag.stitch';
 
 const VALID_SKILLS = [
   'CPR',
@@ -16,79 +13,6 @@ const VALID_SKILLS = [
   'Lifeguard',
   'Mental Health First Aid',
 ];
-
-const Container = styled('div', {
-  maxWidth: '480px',
-  margin: '0 auto',
-  padding: '$xl $md',
-});
-
-const Header = styled('div', {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: '$xl',
-});
-
-const Title = styled('h1', {
-  fontSize: '24px',
-  color: '$ink',
-  margin: 0,
-});
-
-const Section = styled('div', {
-  backgroundColor: '$surfaceLight',
-  borderRadius: '$md',
-  padding: '$md',
-  marginBottom: '$lg',
-});
-
-const SectionTitle = styled('h2', {
-  fontSize: '$subtitle',
-  color: '$slate',
-  textTransform: 'uppercase',
-  letterSpacing: '1px',
-  margin: '0 0 $md 0',
-});
-
-const StatsGrid = styled('div', {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, 1fr)',
-  gap: '$md',
-});
-
-const StatBox = styled('div', {
-  display: 'flex',
-  flexDirection: 'column',
-});
-
-const StatValue = styled('span', {
-  fontSize: '28px',
-  fontWeight: 700,
-  color: '$signal',
-});
-
-const StatLabel = styled('span', {
-  fontSize: '$caption',
-  color: '$slate',
-});
-
-const SkillsGrid = styled('div', {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '$sm',
-});
-
-const SkillChip = styled('button', {
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  cursor: 'pointer',
-  transition: 'transform 0.1s ease',
-  '&:active': {
-    transform: 'scale(0.95)',
-  }
-});
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -144,50 +68,62 @@ export default function ProfilePage() {
   if (loading) return null;
 
   return (
-    <Container>
-      <Header>
-        <Title>{profile?.name ? `${profile.name}'s Profile` : 'Profile'}</Title>
-        <Button onClick={() => navigate(-1)} style={{ background: 'none', border: '1px solid #E8EAED', color: '#0B1F33' }}>
-          Back to Map
-        </Button>
-      </Header>
+    <div className="min-h-screen bg-slate-950 p-4 md:p-8 flex justify-center">
+      <div className="w-full max-w-lg flex flex-col gap-8">
+        <header className="flex justify-between items-center pb-4 border-b-2 border-slate-800">
+          <h1 className="text-3xl font-black text-white uppercase tracking-tighter">
+            {profile?.name ? `${profile.name}'s Profile` : 'Profile'}
+          </h1>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="text-sm font-mono font-bold text-slate-400 hover:text-white uppercase tracking-widest border border-slate-700 px-3 py-1 hover:bg-slate-800 transition-colors"
+          >
+            Back
+          </button>
+        </header>
 
-      <Section>
-        <SectionTitle>My Impact</SectionTitle>
-        <StatsGrid>
-          <StatBox>
-            <StatValue>{stats?.responseCount || 0}</StatValue>
-            <StatLabel>Responses</StatLabel>
-          </StatBox>
-          <StatBox>
-            <StatValue>{stats?.avgRating ? stats.avgRating.toFixed(1) : '0.0'}★</StatValue>
-            <StatLabel>Avg Rating</StatLabel>
-          </StatBox>
-        </StatsGrid>
-      </Section>
+        <section className="bg-slate-900 border-[3px] border-slate-700 p-6 shadow-[8px_8px_0px_0px_rgba(30,41,59,1)]">
+          <h2 className="text-lg font-black text-white uppercase tracking-widest mb-4 border-b border-slate-700 pb-2">My Impact</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col">
+              <span className="text-4xl font-black text-orange-500">{stats?.responseCount || 0}</span>
+              <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest mt-1">Responses</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-4xl font-black text-blue-500">{stats?.avgRating ? stats.avgRating.toFixed(1) : '0.0'}★</span>
+              <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest mt-1">Avg Rating</span>
+            </div>
+          </div>
+        </section>
 
-      <Section>
-        <SectionTitle>My Skills</SectionTitle>
-        <p style={{ fontSize: '13px', color: '#5B6B7C', marginBottom: '16px', marginTop: 0 }}>
-          Select the skills you possess. These will be shown to other responders when you join an incident.
-        </p>
-        <SkillsGrid>
-          {VALID_SKILLS.map(skill => {
-            const isSelected = skills.includes(skill);
-            return (
-              <SkillChip key={skill} onClick={() => toggleSkill(skill)}>
-                <TriageTag tone={isSelected ? "skill" : "skillOutline"}>
+        <section className="bg-slate-900 border-[3px] border-slate-700 p-6 shadow-[8px_8px_0px_0px_rgba(30,41,59,1)]">
+          <h2 className="text-lg font-black text-white uppercase tracking-widest mb-2 border-b border-slate-700 pb-2">My Skills</h2>
+          <p className="text-sm text-slate-400 font-mono mb-4">
+            Select the skills you possess. These will be shown to other responders.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {VALID_SKILLS.map(skill => {
+              const isSelected = skills.includes(skill);
+              return (
+                <button 
+                  key={skill} 
+                  onClick={() => toggleSkill(skill)}
+                  className={`px-3 py-1 text-xs font-black uppercase tracking-widest transition-all active:scale-95 border-2 ${isSelected ? 'border-green-500 bg-green-500/20 text-green-400' : 'border-slate-700 bg-transparent text-slate-400 hover:border-slate-500'}`}
+                >
                   {skill}
-                </TriageTag>
-              </SkillChip>
-            );
-          })}
-        </SkillsGrid>
-      </Section>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
-      <Button size="block" intent="primary" style={{ backgroundColor: '#FBE9E7', color: '#D93025' }} onClick={handleLogout}>
-        Sign Out
-      </Button>
-    </Container>
+        <button 
+          onClick={handleLogout}
+          className="w-full bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border-2 border-red-600 font-black uppercase tracking-widest text-sm py-3 transition-colors"
+        >
+          Sign Out
+        </button>
+      </div>
+    </div>
   );
 }

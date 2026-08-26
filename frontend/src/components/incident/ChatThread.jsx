@@ -1,102 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { styled } from '../../styles/theme';
 import { socketService } from '../../services/socket';
 import { fetchChatMessages } from '../../services/api';
-
-const ThreadContainer = styled('div', {
-  display: 'flex',
-  flexDirection: 'column',
-  height: '300px',
-  backgroundColor: '$surfaceLight',
-  borderRadius: '$md',
-  overflow: 'hidden',
-});
-
-const MessagesArea = styled('div', {
-  flex: 1,
-  overflowY: 'auto',
-  padding: '$sm',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '$xs',
-});
-
-const Bubble = styled('div', {
-  maxWidth: '75%',
-  padding: '$sm $md',
-  borderRadius: '$md',
-  fontSize: '$subtitle',
-  lineHeight: 1.5,
-  wordBreak: 'break-word',
-
-  variants: {
-    align: {
-      left: {
-        alignSelf: 'flex-start',
-        backgroundColor: '#E8EAED',
-        color: '$ink',
-        borderBottomLeftRadius: '2px',
-      },
-      right: {
-        alignSelf: 'flex-end',
-        backgroundColor: '#D6E4F0',
-        color: '$ink',
-        borderBottomRightRadius: '2px',
-      },
-    },
-  },
-});
-
-const Timestamp = styled('span', {
-  fontFamily: '$mono',
-  fontSize: '10px',
-  color: '$slate',
-  marginTop: '2px',
-  display: 'block',
-});
-
-const SenderName = styled('span', {
-  fontFamily: '$mono',
-  fontSize: '10px',
-  color: '$slate',
-  marginBottom: '2px',
-  display: 'block',
-});
-
-const InputRow = styled('div', {
-  display: 'flex',
-  borderTop: '1px solid #E8EAED',
-  padding: '$xs',
-  gap: '$xs',
-});
-
-const ChatInput = styled('input', {
-  flex: 1,
-  border: '1px solid #5B6B7C',
-  borderRadius: '$sm',
-  padding: '$xs $sm',
-  fontFamily: '$body',
-  fontSize: '$subtitle',
-  backgroundColor: 'transparent',
-  color: '$ink',
-  '&:focus': {
-    outline: 'none',
-    borderColor: '$verified',
-  },
-});
-
-const SendButton = styled('button', {
-  backgroundColor: '$verified',
-  color: '#04241A',
-  border: 'none',
-  borderRadius: '$sm',
-  padding: '$xs $md',
-  fontWeight: 700,
-  cursor: 'pointer',
-  fontFamily: '$body',
-  fontSize: '$subtitle',
-  '&:disabled': { opacity: 0.5 },
-});
 
 export default function ChatThread({
   incidentId,
@@ -109,7 +13,6 @@ export default function ChatThread({
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
 
-  // Load chat history on mount
   useEffect(() => {
     const loadHistory = async () => {
       try {
@@ -122,10 +25,8 @@ export default function ChatThread({
     loadHistory();
   }, [incidentId, responderId]);
 
-  // Listen for new messages
   useEffect(() => {
     const handleNewMessage = (msg) => {
-      // Only add messages for this specific responder thread
       if (msg.incidentId === incidentId && msg.responderId === responderId) {
         setMessages((prev) => [...prev, msg]);
       }
@@ -135,7 +36,6 @@ export default function ChatThread({
     return () => socketService.offChatMessageNew(handleNewMessage);
   }, [incidentId, responderId]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -167,33 +67,48 @@ export default function ChatThread({
   };
 
   return (
-    <ThreadContainer>
-      <MessagesArea>
+    <div className="flex flex-col h-[300px] bg-slate-950 border-[3px] border-slate-800 rounded-none overflow-hidden mt-2">
+      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px]">
         {messages.map((msg, i) => {
           const isOwn = (msg.sender === currentUserId) || (msg.sender?._id === currentUserId);
           return (
-            <div key={msg._id || i} style={{ display: 'flex', flexDirection: 'column', alignItems: isOwn ? 'flex-end' : 'flex-start' }}>
-              <SenderName>{getSenderLabel(msg.sender?._id || msg.sender)}</SenderName>
-              <Bubble align={isOwn ? 'right' : 'left'}>
+            <div key={msg._id || i} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+              <span className="font-mono text-[10px] text-slate-400 mb-1 uppercase tracking-widest">
+                {getSenderLabel(msg.sender?._id || msg.sender)}
+              </span>
+              <div 
+                className={`max-w-[80%] px-4 py-2 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words border-2 ${
+                  isOwn 
+                    ? 'bg-blue-600 border-blue-600 text-white rounded-t-lg rounded-bl-lg' 
+                    : 'bg-slate-800 border-slate-700 text-slate-200 rounded-t-lg rounded-br-lg'
+                }`}
+              >
                 {msg.text}
-              </Bubble>
-              <Timestamp>{formatTime(msg.sentAt)}</Timestamp>
+              </div>
+              <span className="font-mono text-[10px] text-slate-500 mt-1">
+                {formatTime(msg.sentAt)}
+              </span>
             </div>
           );
         })}
         <div ref={messagesEndRef} />
-      </MessagesArea>
-      <InputRow>
-        <ChatInput
+      </div>
+      <div className="flex border-t-[3px] border-slate-800 p-2 gap-2 bg-slate-900">
+        <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
+          className="flex-1 border-[2px] border-slate-700 bg-slate-950 text-white p-2 font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors"
         />
-        <SendButton onClick={handleSend} disabled={!input.trim()}>
+        <button 
+          onClick={handleSend} 
+          disabled={!input.trim()}
+          className="bg-blue-600 hover:bg-blue-500 text-white border-[2px] border-blue-600 hover:border-blue-400 px-4 font-black uppercase tracking-widest text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
           Send
-        </SendButton>
-      </InputRow>
-    </ThreadContainer>
+        </button>
+      </div>
+    </div>
   );
 }

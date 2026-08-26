@@ -1,42 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { TicketCard, TicketLabel } from '../components/ui/TicketCard.stitch';
-import { Button } from '../components/ui/Button.stitch';
-import { styled } from '../styles/theme';
-
-const AuthContainer = styled('div', {
-  minHeight: '100vh',
-  backgroundColor: '$baseNavy',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '$md',
-});
-
-const Input = styled('input', {
-  width: '100%',
-  padding: '$sm',
-  marginBottom: '$md',
-  border: '1px solid #5B6B7C',
-  borderRadius: '$sm',
-  fontFamily: '$mono',
-  fontSize: '$subtitle',
-  backgroundColor: 'transparent',
-  color: '$ink',
-  
-  '&:focus': {
-    outline: 'none',
-    borderColor: '$amber',
-  },
-});
-
-const ErrorMessage = styled('div', {
-  color: '$crisisMedical',
-  fontSize: '$caption',
-  marginBottom: '$sm',
-});
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -62,19 +26,19 @@ export default function AuthPage() {
   };
 
   return (
-    <AuthContainer>
-      <TicketCard style={{ width: '100%', maxWidth: '400px' }}>
-        <div style={{ paddingBottom: '20px', borderBottom: '1px dashed #5B6B7C', marginBottom: '20px' }}>
-          <h1 style={{ fontFamily: 'Oswald, sans-serif', textTransform: 'uppercase', margin: 0, fontSize: '24px' }}>
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-[400px] bg-slate-900 border-[3px] border-slate-700 shadow-[8px_8px_0px_0px_rgba(30,41,59,1)] p-6 relative flex flex-col transition-colors duration-200">
+        <div className="pb-5 border-b-[3px] border-slate-700 border-dashed mb-5">
+          <h1 className="font-black uppercase tracking-tighter text-2xl text-white m-0">
             {isLogin ? 'Dispatcher Login' : 'Responder Signup'}
           </h1>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {!isLogin && (
-            <>
-              <TicketLabel>Full Name</TicketLabel>
-              <Input
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-mono text-slate-400 uppercase tracking-widest">Full Name</label>
+              <input
                 type="text"
                 placeholder="Name"
                 value={name}
@@ -82,43 +46,57 @@ export default function AuthPage() {
                 minLength={2}
                 maxLength={80}
                 required
+                className="w-full p-2 border border-slate-700 bg-slate-950 text-white font-mono text-sm focus:outline-none focus:border-blue-500 rounded-sm"
               />
-            </>
+            </div>
           )}
 
-          <TicketLabel>Email Address</TicketLabel>
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-mono text-slate-400 uppercase tracking-widest">Email Address</label>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full p-2 border border-slate-700 bg-slate-950 text-white font-mono text-sm focus:outline-none focus:border-blue-500 rounded-sm"
+            />
+          </div>
 
-          <TicketLabel>Password</TicketLabel>
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={isLogin ? 1 : 8}
-            maxLength={128}
-            required
-          />
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-mono text-slate-400 uppercase tracking-widest">Password</label>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={isLogin ? 1 : 8}
+              maxLength={128}
+              required
+              className="w-full p-2 border border-slate-700 bg-slate-950 text-white font-mono text-sm focus:outline-none focus:border-blue-500 rounded-sm"
+            />
+          </div>
 
-          {error && <ErrorMessage>{error}</ErrorMessage>}
+          {error && <div className="text-red-500 text-xs mt-1">{error}</div>}
 
-          <Button type="submit" size="block" intent="resolve" disabled={loading} style={{ marginTop: '16px' }}>
+          <button 
+            type="submit" 
+            disabled={loading} 
+            className="w-full mt-2 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-sm py-3 px-4 transition-colors disabled:opacity-50"
+          >
             {loading ? 'Processing...' : isLogin ? 'Access System' : 'Register'}
-          </Button>
+          </button>
         </form>
 
-        <div style={{ marginTop: '24px', textAlign: 'center' }}>
-          <Button intent="secondary" onClick={() => setIsLogin(!isLogin)} style={{ border: 'none' }}>
+        <div className="mt-6 text-center">
+          <button 
+            onClick={() => setIsLogin(!isLogin)} 
+            className="bg-transparent text-slate-400 hover:text-white text-xs uppercase tracking-widest font-bold transition-colors"
+          >
             {isLogin ? 'Need an account? Sign up' : 'Have an account? Login'}
-          </Button>
+          </button>
         </div>
-      </TicketCard>
-    </AuthContainer>
+      </div>
+    </div>
   );
 }

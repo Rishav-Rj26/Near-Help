@@ -4,7 +4,6 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { useAuth } from '../context/AuthContext';
-import { styled } from '../styles/theme';
 import { 
   fetchActiveIncidents, 
   fetchAnalytics, 
@@ -13,94 +12,8 @@ import {
   unsuspendUser 
 } from '../services/api';
 
-import { TicketCard, TicketLabel, TicketNumber } from '../components/ui/TicketCard.stitch';
-import { Button } from '../components/ui/Button.stitch';
 import PulsingPinMarker from '../components/map/PulsingPinMarker';
-
-// Layout Styled Components
-const DashboardLayout = styled('div', {
-  display: 'flex',
-  height: '100vh',
-  width: '100vw',
-  backgroundColor: '$fog',
-});
-
-const Sidebar = styled('nav', {
-  width: '240px',
-  backgroundColor: '$ink',
-  color: 'white',
-  padding: '$xl $md',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '$sm',
-});
-
-const SidebarTitle = styled('h1', {
-  fontSize: '20px',
-  margin: '0 0 $xl 0',
-  padding: '0 $sm',
-  color: '$signal',
-  letterSpacing: '1px',
-});
-
-const SidebarItem = styled('a', {
-  padding: '$sm',
-  color: '$slate',
-  textDecoration: 'none',
-  borderRadius: '$sm',
-  transition: 'background-color 0.2s',
-  cursor: 'pointer',
-  '&:hover': {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    color: 'white',
-  }
-});
-
-const MainContent = styled('main', {
-  flex: 1,
-  padding: '$xl',
-  overflowY: 'auto',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '$xl',
-});
-
-const SectionTitle = styled('h2', {
-  fontSize: '$display',
-  color: '$ink',
-  margin: '0 0 $md 0',
-});
-
-const StatsGrid = styled('div', {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(3, 1fr)',
-  gap: '$lg',
-});
-
-const Table = styled('table', {
-  width: '100%',
-  borderCollapse: 'collapse',
-  backgroundColor: 'white',
-  borderRadius: '$md',
-  overflow: 'hidden',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-});
-
-const Th = styled('th', {
-  textAlign: 'left',
-  padding: '$md',
-  borderBottom: '1px solid #E8EAED',
-  backgroundColor: '$surfaceLight',
-  color: '$slate',
-  fontWeight: 600,
-  fontSize: '13px',
-});
-
-const Td = styled('td', {
-  padding: '$md',
-  borderBottom: '1px solid #E8EAED',
-  fontSize: '14px',
-});
+import { BrutalistBarChart, BrutalistRadarChart } from '../components/ui/bento-dashboard';
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
@@ -145,7 +58,6 @@ export default function AdminDashboardPage() {
       } else {
         await suspendUser(userId);
       }
-      // Refresh just the users and analytics
       const [usersRes, analyticsRes] = await Promise.all([
         fetchFlaggedUsers(),
         fetchAnalytics()
@@ -158,44 +70,67 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (loading) return <div>Loading Admin Dashboard...</div>;
+  if (loading) return <div className="min-h-screen bg-slate-950 text-white p-12 font-mono">Loading Admin Dashboard...</div>;
 
   return (
-    <DashboardLayout>
-      <Sidebar>
-        <SidebarTitle>NEARHELP ADMIN</SidebarTitle>
-        <SidebarItem href="#overview">Overview</SidebarItem>
-        <SidebarItem href="#live-map">Live Map</SidebarItem>
-        <SidebarItem href="#flagged-users">Flagged Users</SidebarItem>
-        <SidebarItem onClick={() => navigate('/')}>Exit to App</SidebarItem>
-      </Sidebar>
+    <div className="min-h-screen w-full bg-slate-950 text-slate-200 font-sans flex transition-colors duration-200">
+      {/* Texture Background */}
+      <div className="fixed inset-0 pointer-events-none opacity-5 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px]" />
 
-      <MainContent>
-        <section id="overview">
-          <SectionTitle>Analytics</SectionTitle>
-          <StatsGrid>
-            <TicketCard style={{ padding: '16px' }}>
-              <TicketNumber style={{ fontSize: '32px' }}>{analytics.activeCount}</TicketNumber>
-              <TicketLabel>Active SOS</TicketLabel>
-            </TicketCard>
-            <TicketCard style={{ padding: '16px' }}>
-              <TicketNumber style={{ fontSize: '32px' }}>{analytics.avgResponseTimeSec}s</TicketNumber>
-              <TicketLabel>Avg Response Time</TicketLabel>
-            </TicketCard>
-            <TicketCard style={{ padding: '16px' }}>
-              <TicketNumber style={{ fontSize: '32px', color: '#E2483D' }}>{analytics.flaggedUserCount}</TicketNumber>
-              <TicketLabel>Flagged Users</TicketLabel>
-            </TicketCard>
-          </StatsGrid>
+      {/* Sidebar */}
+      <nav className="w-64 bg-slate-900 border-r-2 border-slate-700 flex flex-col p-6 z-10 shrink-0">
+        <h1 className="text-xl font-black uppercase tracking-tighter mb-8 text-white border-b-2 border-slate-700 pb-2">
+          NEARHELP ADMIN
+        </h1>
+        <div className="flex flex-col gap-2">
+          <a href="#overview" className="p-2 text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">Overview</a>
+          <a href="#live-map" className="p-2 text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">Live Map</a>
+          <a href="#flagged-users" className="p-2 text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">Flagged Users</a>
+          <button onClick={() => navigate('/')} className="p-2 text-sm font-bold uppercase tracking-widest text-blue-400 hover:text-blue-300 hover:bg-slate-800 transition-colors text-left mt-auto">Exit to App</button>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="flex-1 p-6 md:p-12 overflow-y-auto relative z-10 flex flex-col gap-12">
+        <header>
+          <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-2 text-white">Analytics</h2>
+          <p className="font-bold text-slate-500 uppercase tracking-widest text-xs md:text-sm">System Overview Dashboard</p>
+        </header>
+
+        {/* Stats Grid */}
+        <section id="overview" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-slate-900 border-[3px] border-white shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] p-6">
+            <div className="text-5xl font-black text-white">{analytics.activeCount}</div>
+            <div className="text-sm font-mono font-bold text-slate-400 uppercase tracking-widest mt-2">Active SOS</div>
+          </div>
+          <div className="bg-slate-900 border-[3px] border-white shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] p-6">
+            <div className="text-5xl font-black text-white">{analytics.avgResponseTimeSec}s</div>
+            <div className="text-sm font-mono font-bold text-slate-400 uppercase tracking-widest mt-2">Avg Response Time</div>
+          </div>
+          <div className="bg-slate-900 border-[3px] border-red-500 shadow-[8px_8px_0px_0px_rgba(239,68,68,1)] p-6">
+            <div className="text-5xl font-black text-red-500">{analytics.flaggedUserCount}</div>
+            <div className="text-sm font-mono font-bold text-slate-400 uppercase tracking-widest mt-2">Flagged Users</div>
+          </div>
         </section>
 
+        {/* Charts from 21st.dev Bento Dashboard */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-[minmax(0,1fr)]">
+          <div className="w-full min-h-[400px]">
+             <BrutalistBarChart />
+          </div>
+          <div className="w-full min-h-[400px]">
+             <BrutalistRadarChart />
+          </div>
+        </section>
+
+        {/* Live Map */}
         <section id="live-map">
-          <SectionTitle>Live Active Incidents</SectionTitle>
-          <div style={{ height: '400px', borderRadius: '10px', overflow: 'hidden', border: '1px solid #E8EAED' }}>
-            <MapContainer center={[28.6139, 77.2090]} zoom={11} style={{ height: '100%', width: '100%' }}>
+          <h2 className="text-3xl font-black uppercase tracking-tighter mb-4 text-white">Live Active Incidents</h2>
+          <div className="h-[400px] border-[3px] border-slate-700 bg-slate-900 p-2 shadow-[8px_8px_0px_0px_rgba(51,65,85,1)]">
+            <MapContainer center={[28.6139, 77.2090]} zoom={11} className="h-full w-full">
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               />
               {activeIncidents.map(inc => (
                 <PulsingPinMarker 
@@ -210,58 +145,55 @@ export default function AdminDashboardPage() {
           </div>
         </section>
 
+        {/* Flagged Users Table */}
         <section id="flagged-users">
-          <SectionTitle>Flagged Users</SectionTitle>
-          <Table>
-            <thead>
-              <tr>
-                <Th>Name</Th>
-                <Th>Email</Th>
-                <Th>False Alerts</Th>
-                <Th>Avg Rating</Th>
-                <Th>Status</Th>
-                <Th>Action</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {flaggedUsers.map(u => (
-                <tr key={u._id}>
-                  <Td><strong>{u.name}</strong></Td>
-                  <Td>{u.email}</Td>
-                  <Td style={{ color: u.trust?.falseAlertCount > 0 ? '#E2483D' : 'inherit' }}>
-                    {u.trust?.falseAlertCount || 0}
-                  </Td>
-                  <Td>{u.trust?.avgRating ? u.trust.avgRating.toFixed(1) : '0.0'}★</Td>
-                  <Td>
-                    {u.trust?.isSuspended 
-                      ? <span style={{ color: '#E2483D', fontWeight: 600 }}>Suspended</span>
-                      : <span style={{ color: '#1F9E6D' }}>Active</span>}
-                  </Td>
-                  <Td>
-                    <Button 
-                      size="sm"
-                      intent={u.trust?.isSuspended ? "primary" : "secondary"}
-                      style={{ 
-                        backgroundColor: u.trust?.isSuspended ? '#1F9E6D' : '#FBE9E7',
-                        color: u.trust?.isSuspended ? 'white' : '#D93025',
-                        border: 'none'
-                      }}
-                      onClick={() => handleToggleSuspend(u._id, u.trust?.isSuspended)}
-                    >
-                      {u.trust?.isSuspended ? 'Unsuspend' : 'Suspend'}
-                    </Button>
-                  </Td>
+          <h2 className="text-3xl font-black uppercase tracking-tighter mb-4 text-white">Flagged Users</h2>
+          <div className="w-full border-[3px] border-slate-700 bg-slate-900 overflow-hidden shadow-[8px_8px_0px_0px_rgba(51,65,85,1)]">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-800 text-slate-400 font-mono text-xs uppercase tracking-widest">
+                  <th className="p-4 border-b-2 border-slate-700">Name</th>
+                  <th className="p-4 border-b-2 border-slate-700">Email</th>
+                  <th className="p-4 border-b-2 border-slate-700">False Alerts</th>
+                  <th className="p-4 border-b-2 border-slate-700">Avg Rating</th>
+                  <th className="p-4 border-b-2 border-slate-700">Status</th>
+                  <th className="p-4 border-b-2 border-slate-700">Action</th>
                 </tr>
-              ))}
-              {flaggedUsers.length === 0 && (
-                <tr>
-                  <Td colSpan={6} style={{ textAlign: 'center', color: '#5B6B7C' }}>No flagged users found.</Td>
-                </tr>
-              )}
-            </tbody>
-          </Table>
+              </thead>
+              <tbody>
+                {flaggedUsers.map(u => (
+                  <tr key={u._id} className="text-sm font-bold">
+                    <td className="p-4 border-b border-slate-800 text-white">{u.name}</td>
+                    <td className="p-4 border-b border-slate-800 text-slate-300 font-normal">{u.email}</td>
+                    <td className={`p-4 border-b border-slate-800 ${u.trust?.falseAlertCount > 0 ? 'text-red-500' : 'text-slate-300'}`}>
+                      {u.trust?.falseAlertCount || 0}
+                    </td>
+                    <td className="p-4 border-b border-slate-800 text-yellow-500">{u.trust?.avgRating ? u.trust.avgRating.toFixed(1) : '0.0'}★</td>
+                    <td className="p-4 border-b border-slate-800">
+                      {u.trust?.isSuspended 
+                        ? <span className="bg-red-500/20 text-red-500 px-2 py-1 uppercase text-xs tracking-wider">Suspended</span>
+                        : <span className="bg-green-500/20 text-green-500 px-2 py-1 uppercase text-xs tracking-wider">Active</span>}
+                    </td>
+                    <td className="p-4 border-b border-slate-800">
+                      <button 
+                        className={`px-3 py-1 text-xs font-black uppercase tracking-widest transition-colors border-2 ${u.trust?.isSuspended ? 'border-green-500 text-green-500 hover:bg-green-500 hover:text-slate-900' : 'border-red-500 text-red-500 hover:bg-red-500 hover:text-white'}`}
+                        onClick={() => handleToggleSuspend(u._id, u.trust?.isSuspended)}
+                      >
+                        {u.trust?.isSuspended ? 'Unsuspend' : 'Suspend'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {flaggedUsers.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="p-8 text-center text-slate-500 font-mono">No flagged users found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
-      </MainContent>
-    </DashboardLayout>
+      </main>
+    </div>
   );
 }
