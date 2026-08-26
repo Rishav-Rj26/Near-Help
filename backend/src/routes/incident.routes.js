@@ -3,6 +3,7 @@ import { protect } from '../middleware/auth.middleware.js';
 import { findActiveIncidentsNear } from '../controllers/geospatial.controller.js';
 import { Incident } from '../models/incident.model.js';
 import { ChatMessage } from '../models/chatMessage.model.js';
+import { User } from '../models/user.model.js';
 
 const router = express.Router();
 
@@ -124,6 +125,22 @@ router.post('/:id/debrief', protect, async (req, res) => {
     };
     
     await incident.save();
+
+    // Trust Update: if false alert, increment falseAlertCount
+    if (wasReal === false) {
+      const broadcaster = await User.findById(incident.broadcaster);
+      if (broadcaster) {
+        // Mongoose defaults aren't applied to existing nested subdocs if undefined, ensure it exists
+        if (!broadcaster.trust) broadcaster.trust = { responseCount: 0, avgRating: 0, falseAlertCount: 0, isSuspended: false, suspendedUntil: null };
+        
+        broadcaster.trust.falseAlertCount += 1;
+        if (broadcaster.trust.falseAlertCount >= 3) {
+          broadcaster.trust.isSuspended = true;
+        }
+        await broadcaster.save();
+      }
+    }
+
     res.json({ message: 'Debrief submitted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -161,6 +178,21 @@ router.patch('/:id/responders/:responderId/rating', protect, async (req, res) =>
 
     responderEntry.rating = rating;
     await incident.save();
+
+    // Trust Update: update responder's running avg and count
+    const responderUser = await User.findById(responderId);
+    if (responderUser) {
+      if (!responderUser.trust) responderUser.trust = { responseCount: 0, avgRating: 0, falseAlertCount: 0, isSuspended: false, suspendedUntil: null };
+
+      const oldCount = responderUser.trust.responseCount || 0;
+      const oldAvg = responderUser.trust.avgRating || 0;
+      
+      const newAvg = (oldAvg * oldCount + rating) / (oldCount + 1);
+      
+      responderUser.trust.responseCount = oldCount + 1;
+      responderUser.trust.avgRating = newAvg;
+      await responderUser.save();
+    }
     
     res.json({ message: 'Rating updated successfully' });
   } catch (error) {

@@ -7,6 +7,7 @@ import { initSocket } from './socket/index.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import incidentRoutes from './routes/incident.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/incidents', incidentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Database connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/nearhelp';

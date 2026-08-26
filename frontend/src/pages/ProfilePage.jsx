@@ -157,7 +157,11 @@ export default function ProfilePage() {
         <StatsGrid>
           <StatBox>
             <StatValue>{stats?.responseCount || 0}</StatValue>
-            <StatLabel>Incidents Responded</StatLabel>
+            <StatLabel>Responses</StatLabel>
+          </StatBox>
+          <StatBox>
+            <StatValue>{stats?.avgRating ? stats.avgRating.toFixed(1) : '0.0'}★</StatValue>
+            <StatLabel>Avg Rating</StatLabel>
           </StatBox>
         </StatsGrid>
       </Section>

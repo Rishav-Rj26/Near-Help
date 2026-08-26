@@ -68,6 +68,12 @@ export const initSocket = (server) => {
         
         // 1. Identity from JWT
         const broadcasterId = userId;
+
+        // Trust check: load user to see if they are suspended
+        const userDoc = await User.findById(broadcasterId).select('trust');
+        if (userDoc?.trust?.isSuspended) {
+          return socket.emit('error', { code: 'SUSPENDED', message: 'Your account is suspended due to excessive false alerts. You cannot trigger SOS.' });
+        }
         
         // 2. Create Incident
         const incident = await Incident.create({

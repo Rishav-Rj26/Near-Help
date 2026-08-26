@@ -16,13 +16,11 @@ router.get('/me', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Count how many incidents this user has responded to
-    const responseCount = await Incident.countDocuments({ 'responders.user': req.user.id });
-
     res.json({
       user,
       stats: {
-        responseCount,
+        responseCount: user.trust?.responseCount || 0,
+        avgRating: user.trust?.avgRating || 0,
       }
     });
   } catch (error) {

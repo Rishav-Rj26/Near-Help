@@ -34,6 +34,13 @@ const userSchema = new mongoose.Schema({
     default: 'user',
   },
   lastLocationUpdate: Date,
+  trust: {
+    responseCount: { type: Number, default: 0 },
+    avgRating: { type: Number, default: 0 },
+    falseAlertCount: { type: Number, default: 0 },
+    isSuspended: { type: Boolean, default: false },
+    suspendedUntil: { type: Date, default: null },
+  }
 }, { timestamps: true });
 
 // 2dsphere index for geospatial queries

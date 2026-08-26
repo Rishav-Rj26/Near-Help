@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
 import MapPage from './pages/MapPage';
 import ProfilePage from './pages/ProfilePage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/" element={<MapPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

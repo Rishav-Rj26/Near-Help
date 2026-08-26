@@ -30,4 +30,11 @@ export const fetchIncident = (incidentId) => api.get(`/incidents/${incidentId}`)
 export const submitDebrief = (incidentId, data) => api.post(`/incidents/${incidentId}/debrief`, data);
 export const rateResponder = (incidentId, responderId, rating) => api.patch(`/incidents/${incidentId}/responders/${responderId}/rating`, { rating });
 
+// Admin API
+export const fetchActiveIncidents = () => api.get('/admin/incidents/active');
+export const fetchAnalytics = () => api.get('/admin/analytics');
+export const fetchFlaggedUsers = () => api.get('/admin/flagged-users');
+export const suspendUser = (userId) => api.patch(`/admin/users/${userId}/suspend`);
+export const unsuspendUser = (userId) => api.patch(`/admin/users/${userId}/unsuspend`);
+
 export default api;
