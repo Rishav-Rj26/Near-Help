@@ -1,5 +1,6 @@
 import { User } from '../models/user.model.js';
 import { Incident } from '../models/incident.model.js';
+import { EmergencyService } from '../models/emergencyService.model.js';
 
 /**
  * Find users within a certain radius of a location.
@@ -51,4 +52,21 @@ export const updateUserLocation = async (userId, lng, lat) => {
     },
     { new: true }
   );
+};
+
+/**
+ * Find nearby emergency services (hospitals, fire stations, etc).
+ */
+export const findNearbyServices = async (lng, lat, radiusMeters = 5000, limit = 5) => {
+  return EmergencyService.find({
+    location: {
+      $near: {
+        $geometry: {
+          type: 'Point',
+          coordinates: [parseFloat(lng), parseFloat(lat)],
+        },
+        $maxDistance: parseInt(radiusMeters),
+      },
+    },
+  }).limit(limit);
 };

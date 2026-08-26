@@ -23,6 +23,24 @@ function RecenterAutomatically({ lat, lng }) {
   return null;
 }
 
+const ProfileButton = styled('button', {
+  position: 'absolute',
+  top: '16px',
+  right: '16px',
+  width: '40px',
+  height: '40px',
+  borderRadius: '50%',
+  backgroundColor: '#ffffff',
+  border: '1px solid #E8EAED',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: '20px',
+  cursor: 'pointer',
+  zIndex: 1000,
+});
+
 export default function MapPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -149,6 +167,10 @@ export default function MapPage() {
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', backgroundColor: '#0B1F33' }}>
+      <ProfileButton onClick={() => navigate('/profile')} title="My Profile">
+        👤
+      </ProfileButton>
+
       <MapContainer 
         center={[location.lat, location.lng]} 
         zoom={15} 

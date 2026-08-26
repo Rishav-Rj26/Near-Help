@@ -72,6 +72,12 @@ const incidentSchema = new mongoose.Schema({
     notes: String,
     submittedAt: Date,
   },
+  nearbyServices: [{
+    name: String,
+    type: { type: String }, // 'type' is a reserved mongoose keyword if used alone, so use { type: String }
+    phone: String,
+    coordinates: [Number],
+  }],
 }, { timestamps: true });
 
 // 2dsphere index for geospatial queries

@@ -22,6 +22,9 @@ export const loginUser = (email, password) => api.post('/auth/login', { email, p
 export const signupUser = (name, email, password) => api.post('/auth/signup', { name, email, password });
 export const fetchNearbyIncidents = (lng, lat, radius = 5000) => api.get(`/incidents/nearby?lng=${lng}&lat=${lat}&radius=${radius}`);
 export const updateUserLocation = (lng, lat) => api.put('/users/location', { lng, lat });
+export const updateUserSkills = (skills) => api.put('/users/skills', { skills });
+export const fetchCurrentUser = () => api.get('/users/me');
+
 export const fetchChatMessages = (incidentId, responderId) => api.get(`/incidents/${incidentId}/messages?responderId=${responderId}`);
 export const fetchIncident = (incidentId) => api.get(`/incidents/${incidentId}`);
 export const submitDebrief = (incidentId, data) => api.post(`/incidents/${incidentId}/debrief`, data);

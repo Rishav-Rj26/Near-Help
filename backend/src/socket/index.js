@@ -3,10 +3,11 @@ import jwt from 'jsonwebtoken';
 import { Incident } from '../models/incident.model.js';
 import { User } from '../models/user.model.js';
 import { ChatMessage } from '../models/chatMessage.model.js';
-import { findUsersNear, updateUserLocation } from '../controllers/geospatial.controller.js';
+import { findUsersNear, updateUserLocation, findNearbyServices } from '../controllers/geospatial.controller.js';
 import { generateCrisisGuidance } from '../services/ai/crisisGuidance.service.js';
 import { generateEmergencySummary } from '../services/ai/emergencySummary.service.js';
 import { generateDebriefQuestions } from '../services/ai/debriefPrompt.service.js';
+import { hasRelevantSkill, getTopMatchedSkill } from '../utils/skillMatch.js';
 
 let io;
 // In-memory store mapping userId -> socketId
@@ -139,16 +140,24 @@ export const initSocket = (server) => {
                 radius: incident.radius,
                 responderCount: 0,
               }),
+              findNearbyServices(location.lng, location.lat, incident.radius, 3), // Get top 3 nearby services
             ]);
             
             incident.aiGuidance = guidanceResult;
             incident.aiSummary = summaryResult;
+            incident.nearbyServices = nearbyServicesResult.map(s => ({
+              name: s.name,
+              type: s.type,
+              phone: s.phone,
+              coordinates: s.location.coordinates,
+            }));
             await incident.save();
 
             io.to(`incident:${incident._id}`).emit('sos:ai_ready', {
               incidentId: incident._id,
               aiGuidance: guidanceResult,
               aiSummary: summaryResult,
+              nearbyServices: incident.nearbyServices,
             });
           } catch (err) {
             console.error('AI generation failed (non-blocking):', err);
@@ -177,23 +186,43 @@ export const initSocket = (server) => {
         }
 
         // Reject if already a responder (idempotent — no error, just ack)
-        const alreadyJoined = incident.responders.some(
+        const alreadyJoinedEntry = incident.responders.find(
           (r) => r.user.toString() === userId
         );
-        if (alreadyJoined) {
+        if (alreadyJoinedEntry) {
+          // Fetch user to ensure we have their latest skills/name
+          const responderUser = await User.findById(userId);
+          const topSkill = getTopMatchedSkill(incident.crisisType, responderUser?.skills || []);
+
           // Still join the socket room in case they reconnected
           socket.join(`incident:${incidentId}`);
           return socket.emit('responder:joined', {
             incidentId,
-            responder: { id: userId, name: socket.data.user.name, hasRelevantSkill: false },
+            responder: { 
+              id: userId, 
+              name: responderUser?.name || socket.data.user.name, 
+              hasRelevantSkill: alreadyJoinedEntry.hasRelevantSkill,
+              topSkill,
+            },
             alreadyJoined: true,
             aiGuidance: incident.aiGuidance,
             aiSummary: incident.aiSummary,
+            nearbyServices: incident.nearbyServices,
           });
         }
 
+        // Fetch user to calculate skills
+        const responderUser = await User.findById(userId);
+        const userSkills = responderUser?.skills || [];
+        const isRelevant = hasRelevantSkill(incident.crisisType, userSkills);
+        const topSkill = getTopMatchedSkill(incident.crisisType, userSkills);
+
         // Push into responders array
-        incident.responders.push({ user: userId, joinedAt: new Date() });
+        incident.responders.push({ 
+          user: userId, 
+          joinedAt: new Date(),
+          hasRelevantSkill: isRelevant,
+        });
         await incident.save();
 
         // Join socket room
@@ -209,10 +238,12 @@ export const initSocket = (server) => {
           responder: {
             id: userId,
             name: responderUser?.name || socket.data.user.name,
-            hasRelevantSkill: false,
+            hasRelevantSkill: isRelevant,
+            topSkill,
           },
           aiGuidance: incident.aiGuidance,
           aiSummary: incident.aiSummary,
+          nearbyServices: incident.nearbyServices,
         });
 
         console.log(`Responder ${userId} joined incident ${incidentId}`);

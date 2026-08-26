@@ -58,6 +58,15 @@ export const TriageTag = styled("span", {
         backgroundColor: "#FAEEDA",
         color: "#854F0B",
       },
+      skillOutline: {
+        backgroundColor: "transparent",
+        color: "#854F0B",
+        border: "1px dashed #854F0B",
+        "&::before": {
+          border: "1px dashed currentColor",
+          backgroundColor: "transparent",
+        }
+      },
       neutral: {
         backgroundColor: "$slate",
         color: "$fog",

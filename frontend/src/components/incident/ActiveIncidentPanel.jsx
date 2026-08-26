@@ -92,9 +92,10 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
   const [hasJoined, setHasJoined] = useState(false);
   const [activeChatResponderId, setActiveChatResponderId] = useState(null);
   
-  // Phase 3 AI State
+  // Phase 3 AI & Phase 4 Services State
   const [aiGuidance, setAiGuidance] = useState(incident.aiGuidance || null);
   const [aiSummary, setAiSummary] = useState(incident.aiSummary || null);
+  const [nearbyServices, setNearbyServices] = useState(incident.nearbyServices || []);
   const [aiLoading, setAiLoading] = useState(!incident.aiGuidance);
 
   const incidentId = incident.incidentId || incident._id;
@@ -151,6 +152,7 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
       if (data.incidentId === incidentId) {
         setAiGuidance(data.aiGuidance);
         setAiSummary(data.aiSummary);
+        if (data.nearbyServices) setNearbyServices(data.nearbyServices);
         setAiLoading(false);
       }
     };
@@ -209,7 +211,8 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
               onClick={() => isBroadcaster && setActiveChatResponderId(rId)}
             >
               <span>{rName}</span>
-              {r.hasRelevantSkill && <TriageTag tone="skill">Skilled</TriageTag>}
+              {r.hasRelevantSkill && r.topSkill && <TriageTag tone="skill">{r.topSkill}</TriageTag>}
+              {r.hasRelevantSkill && !r.topSkill && <TriageTag tone="skill">Skilled</TriageTag>}
             </ResponderListItem>
           );
         })}
@@ -217,6 +220,22 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
         {/* Phase 3: AI Crisis Assistant */}
         <CrisisGuidanceCard steps={aiGuidance?.steps} loading={aiLoading} />
         {!aiLoading && aiSummary && <EmergencySummaryCard summary={aiSummary?.summary} />}
+
+        {/* Phase 4: Nearby Services */}
+        {!aiLoading && nearbyServices.length > 0 && (
+          <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+            <SectionTitle style={{ marginTop: 0 }}>Nearby Services</SectionTitle>
+            {nearbyServices.map((service, idx) => (
+              <div key={idx} style={{ padding: '8px', backgroundColor: '#F8F9FA', borderRadius: '4px', marginBottom: '8px', fontSize: '13px' }}>
+                <div style={{ fontWeight: 600 }}>{service.name}</div>
+                <div style={{ color: '#5B6B7C', display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                  <span style={{ textTransform: 'capitalize' }}>{service.type.replace('_', ' ')}</span>
+                  <span>{service.phone || 'No phone'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Chat thread */}
         {activeChatResponderId && (
