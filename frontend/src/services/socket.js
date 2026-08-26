@@ -58,6 +58,12 @@ class SocketService {
     }
   }
 
+  offSOSTriggered(callback) {
+    if (this.socket) {
+      this.socket.off('sos:triggered', callback);
+    }
+  }
+
   offSOSNew(callback) {
     if (this.socket) {
       this.socket.off('sos:new', callback);

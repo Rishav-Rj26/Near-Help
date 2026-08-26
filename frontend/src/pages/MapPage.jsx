@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import 'leaflet/dist/leaflet.css';
 
 import { useAuth } from '../context/AuthContext';
+import { styled } from '../styles/theme';
 import { socketService } from '../services/socket';
 import { fetchNearbyIncidents, updateUserLocation } from '../services/api';
 

@@ -1,6 +1,6 @@
 import React from 'react';
-import { styled, keyframes } from '../../../styles/theme';
-import { TicketLabel } from '../../ui/TicketCard.stitch';
+import { styled, keyframes } from '../../styles/theme';
+import { TicketLabel } from '../ui/TicketCard.stitch';
 
 const pulse = keyframes({
   '0%': { opacity: 0.6 },

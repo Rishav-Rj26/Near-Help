@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { styled } from '../../../styles/theme';
-import { TicketLabel } from '../../ui/TicketCard.stitch';
+import { styled } from '../../styles/theme';
+import { TicketLabel } from '../ui/TicketCard.stitch';
 
 const SummaryContainer = styled('div', {
   backgroundColor: '$surfaceLight',

@@ -251,9 +251,6 @@ export const initSocket = (server) => {
         // Join socket room
         socket.join(`incident:${incidentId}`);
 
-        // Fetch user for name
-        const responderUser = await User.findById(userId);
-
         // Emit to room — this is about the RESPONDER, not the broadcaster,
         // so no PII stripping needed even if the incident is anonymous
         io.to(`incident:${incidentId}`).emit('responder:joined', {

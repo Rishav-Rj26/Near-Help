@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { styled } from '../../../styles/theme';
+import { styled } from '../../styles/theme';
 import { ModalOverlay, ModalSheet, ModalTitle } from '../ui/Modal.stitch';
 import { Button } from '../ui/Button.stitch';
 import { TriageTag } from '../ui/TriageTag.stitch';
-import { submitDebrief, rateResponder } from '../../../services/api';
+import { submitDebrief, rateResponder } from '../../services/api';
 
 const QuestionLabel = styled('label', {
   display: 'block',
