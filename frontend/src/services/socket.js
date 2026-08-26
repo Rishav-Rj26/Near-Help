@@ -1,0 +1,150 @@
+import { io } from 'socket.io-client';
+
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+class SocketService {
+  constructor() {
+    this.socket = null;
+  }
+
+  connect(token) {
+    if (this.socket) {
+      this.socket.disconnect();
+    }
+    
+    this.socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ['websocket'],
+    });
+
+    this.socket.on('connect', () => {
+      console.log('Socket connected:', this.socket.id);
+    });
+
+    this.socket.on('connect_error', (err) => {
+      console.error('Socket connection error:', err.message);
+    });
+  }
+
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+  }
+
+  // ── Phase 1 ──
+  triggerSOS(payload) {
+    if (this.socket) {
+      this.socket.emit('sos:trigger', payload);
+    }
+  }
+
+  updateLocation(lng, lat) {
+    if (this.socket) {
+      this.socket.emit('location:update', { lng, lat });
+    }
+  }
+
+  onSOSNew(callback) {
+    if (this.socket) {
+      this.socket.on('sos:new', callback);
+    }
+  }
+  
+  onSOSTriggered(callback) {
+    if (this.socket) {
+      this.socket.on('sos:triggered', callback);
+    }
+  }
+
+  offSOSNew(callback) {
+    if (this.socket) {
+      this.socket.off('sos:new', callback);
+    }
+  }
+
+  // ── Phase 2: Responder ──
+  joinAsResponder(incidentId) {
+    if (this.socket) {
+      this.socket.emit('responder:join', { incidentId });
+    }
+  }
+
+  sendResponderLocation(incidentId, lng, lat) {
+    if (this.socket) {
+      this.socket.emit('responder:location', { incidentId, lng, lat });
+    }
+  }
+
+  onResponderJoined(callback) {
+    if (this.socket) {
+      this.socket.on('responder:joined', callback);
+    }
+  }
+
+  offResponderJoined(callback) {
+    if (this.socket) {
+      this.socket.off('responder:joined', callback);
+    }
+  }
+
+  onResponderLocationUpdate(callback) {
+    if (this.socket) {
+      this.socket.on('responder:location:update', callback);
+    }
+  }
+
+  offResponderLocationUpdate(callback) {
+    if (this.socket) {
+      this.socket.off('responder:location:update', callback);
+    }
+  }
+
+  // ── Phase 2: Chat ──
+  sendChatMessage(incidentId, responderId, text) {
+    if (this.socket) {
+      this.socket.emit('chat:message', { incidentId, responderId, text });
+    }
+  }
+
+  onChatMessageNew(callback) {
+    if (this.socket) {
+      this.socket.on('chat:message:new', callback);
+    }
+  }
+
+  offChatMessageNew(callback) {
+    if (this.socket) {
+      this.socket.off('chat:message:new', callback);
+    }
+  }
+
+  // ── Phase 2: Resolve ──
+  resolveIncident(incidentId) {
+    if (this.socket) {
+      this.socket.emit('sos:resolve', { incidentId });
+    }
+  }
+
+  onSOSResolved(callback) {
+    if (this.socket) {
+      this.socket.on('sos:resolved', callback);
+    }
+  }
+
+  offSOSResolved(callback) {
+    if (this.socket) {
+      this.socket.off('sos:resolved', callback);
+    }
+  }
+
+  // ── Generic error listener ──
+  onError(callback) {
+    if (this.socket) {
+      this.socket.on('error', callback);
+    }
+  }
+}
+
+export const socketService = new SocketService();

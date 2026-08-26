@@ -1,0 +1,200 @@
+import React, { useEffect, useState, useRef } from 'react';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { useNavigate } from 'react-router-dom';
+import 'leaflet/dist/leaflet.css';
+
+import { useAuth } from '../context/AuthContext';
+import { socketService } from '../services/socket';
+import { fetchNearbyIncidents, updateUserLocation } from '../services/api';
+
+import { Button } from '../components/ui/Button.stitch';
+import SOSTriggerModal from '../components/SOSTriggerModal';
+import PulsingPinMarker from '../components/map/PulsingPinMarker';
+import ResponderMarkerLayer from '../components/map/ResponderMarkerLayer';
+import ActiveIncidentPanel from '../components/incident/ActiveIncidentPanel';
+
+// Helper component to center map on user location
+function RecenterAutomatically({ lat, lng }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView([lat, lng], 15);
+  }, [lat, lng, map]);
+  return null;
+}
+
+export default function MapPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  const [location, setLocation] = useState({ lat: 28.6139, lng: 77.2090 }); // Default: Delhi
+  const [incidents, setIncidents] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedIncident, setSelectedIncident] = useState(null);
+
+  const locationIntervalRef = useRef(null);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    // 1. Get user location (using mockable geolocation)
+    // For manual testing, you can read from URL params: ?lat=...&lng=...
+    const params = new URLSearchParams(window.location.search);
+    const mockLat = params.get('lat');
+    const mockLng = params.get('lng');
+
+    const updateLoc = (lat, lng) => {
+      handleLocationUpdate(lat, lng);
+    };
+
+    if (mockLat && mockLng) {
+      updateLoc(parseFloat(mockLat), parseFloat(mockLng));
+    } else {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => updateLoc(pos.coords.latitude, pos.coords.longitude),
+        (err) => console.error("Geolocation error:", err),
+        { enableHighAccuracy: true }
+      );
+    }
+
+    // Phase 2: Start an interval to periodically send location updates if we are actively responding
+    // In a real app, this would use watchPosition, but an interval is fine for this demo.
+    locationIntervalRef.current = setInterval(() => {
+       // We can just rely on the latest state if we use a functional update, but here we just
+       // use the current location state. We should ideally only send this if we are a responder
+       // to some active incident, but for simplicity we'll just emit it for any selected incident.
+       setIncidents(currentIncidents => {
+           // Find if we are a responder to any active incident
+           // For now, we'll just emit location if we have a selected incident
+           return currentIncidents;
+       });
+    }, 5000);
+
+    // 2. Setup socket listeners
+    socketService.onSOSNew((incident) => {
+      console.log('New SOS received:', incident);
+      setIncidents((prev) => [...prev, incident]);
+    });
+
+    socketService.onSOSTriggered((incident) => {
+      console.log('My SOS was triggered:', incident);
+      setIncidents((prev) => [...prev, incident]);
+      setIsModalOpen(false);
+      // Auto-open panel for our own incident
+      setSelectedIncident(incident);
+    });
+
+    return () => {
+      socketService.offSOSNew();
+      socketService.offSOSTriggered();
+      if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
+    };
+  }, [user, navigate]);
+
+  // Phase 2: Location sharing loop for responders
+  useEffect(() => {
+    if (selectedIncident && user) {
+        const intervalId = setInterval(() => {
+            // We emit our location for the selected incident
+            // The server throttles this to every 3s and verifies we are actually a responder
+            socketService.sendResponderLocation(selectedIncident.incidentId || selectedIncident._id, location.lng, location.lat);
+        }, 4000);
+        return () => clearInterval(intervalId);
+    }
+  }, [selectedIncident, location, user]);
+
+  const handleLocationUpdate = async (lat, lng) => {
+    setLocation({ lat, lng });
+    
+    // Update server via API
+    try {
+      await updateUserLocation(lng, lat);
+      // Fetch initial nearby incidents
+      const { data } = await fetchNearbyIncidents(lng, lat, 5000);
+      setIncidents(data);
+    } catch (err) {
+      console.error('Failed to update location/fetch incidents', err);
+    }
+  };
+
+  const handleTriggerSOS = (payload) => {
+    socketService.triggerSOS(payload);
+  };
+
+  const handleIncidentResolved = (incidentId) => {
+    // Remove the incident from the map
+    setIncidents(prev => prev.filter(inc => (inc.incidentId || inc._id) !== incidentId));
+    if (selectedIncident && (selectedIncident.incidentId || selectedIncident._id) === incidentId) {
+        setSelectedIncident(null);
+    }
+  };
+
+  if (!user) return null;
+
+  return (
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', backgroundColor: '#0B1F33' }}>
+      <MapContainer 
+        center={[location.lat, location.lng]} 
+        zoom={15} 
+        style={{ width: '100%', height: '100%' }}
+        zoomControl={false}
+      >
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        />
+        <RecenterAutomatically lat={location.lat} lng={location.lng} />
+
+        {incidents.map((incident) => (
+          <PulsingPinMarker 
+            key={incident.incidentId || incident._id} 
+            incident={incident} 
+            onClick={(inc) => setSelectedIncident(inc)}
+          />
+        ))}
+
+        {/* Phase 2: Live responder locations on the broadcaster's map */}
+        {selectedIncident && (selectedIncident.broadcaster === user.id || selectedIncident.broadcaster?.toString() === user.id) && (
+            <ResponderMarkerLayer incidentId={selectedIncident.incidentId || selectedIncident._id} />
+        )}
+      </MapContainer>
+
+      {/* SOS Button Overlay */}
+      <div style={{
+        position: 'absolute',
+        bottom: '40px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 1000,
+        display: selectedIncident ? 'none' : 'block' // hide when panel is open
+      }}>
+        <Button 
+          intent="sos" 
+          size="circle" 
+          onClick={() => setIsModalOpen(true)}
+          style={{ width: '80px', height: '80px', fontSize: '18px', boxShadow: '0 4px 12px rgba(255,122,26,0.3)' }}
+        >
+          SOS
+        </Button>
+      </div>
+
+      <SOSTriggerModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleTriggerSOS}
+        location={{ lat: location.lat, lng: location.lng }}
+      />
+
+      {/* Phase 2: Active Incident Panel */}
+      {selectedIncident && (
+        <ActiveIncidentPanel
+            incident={selectedIncident}
+            onClose={() => setSelectedIncident(null)}
+            onResolved={handleIncidentResolved}
+        />
+      )}
+    </div>
+  );
+}
