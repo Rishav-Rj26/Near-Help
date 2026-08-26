@@ -95,12 +95,10 @@ export default function MapPage() {
 
     // 2. Setup socket listeners
     socketService.onSOSNew((incident) => {
-      console.log('New SOS received:', incident);
       setIncidents((prev) => [...prev, incident]);
     });
 
     socketService.onSOSTriggered((incident) => {
-      console.log('My SOS was triggered:', incident);
       setIncidents((prev) => [...prev, incident]);
       setIsModalOpen(false);
       // Auto-open panel for our own incident
