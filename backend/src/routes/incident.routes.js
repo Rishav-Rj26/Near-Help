@@ -69,5 +69,104 @@ router.get('/:id/messages', protect, async (req, res) => {
   }
 });
 
+// GET /api/incidents/:id
+// Get incident details for late joiners
+router.get('/:id', protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const incident = await Incident.findById(id).populate('broadcaster', 'name avatarUrl');
+    
+    if (!incident) {
+      return res.status(404).json({ message: 'Incident not found' });
+    }
+
+    const incObj = incident.toObject();
+    
+    // PII Stripping for anonymous incidents if viewer is not admin/broadcaster
+    const isBroadcaster = incident.broadcaster._id.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    
+    if (incObj.isAnonymous && !isBroadcaster && !isAdmin) {
+      incObj.broadcaster.name = 'Anonymous reporter';
+      delete incObj.broadcaster.avatarUrl;
+    }
+
+    res.json(incObj);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST /api/incidents/:id/debrief
+// Submit debrief notes after resolution
+router.post('/:id/debrief', protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { wasReal, notes } = req.body;
+    const currentUserId = req.user.id;
+
+    const incident = await Incident.findById(id);
+    if (!incident) {
+      return res.status(404).json({ message: 'Incident not found' });
+    }
+
+    const isBroadcaster = incident.broadcaster.toString() === currentUserId;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isBroadcaster && !isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to submit debrief' });
+    }
+
+    incident.debrief = {
+      wasReal,
+      notes,
+      submittedAt: new Date()
+    };
+    
+    await incident.save();
+    res.json({ message: 'Debrief submitted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// PATCH /api/incidents/:id/responders/:responderId/rating
+// Rate a responder
+router.patch('/:id/responders/:responderId/rating', protect, async (req, res) => {
+  try {
+    const { id, responderId } = req.params;
+    const { rating } = req.body;
+    const currentUserId = req.user.id;
+
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
+
+    const incident = await Incident.findById(id);
+    if (!incident) {
+      return res.status(404).json({ message: 'Incident not found' });
+    }
+
+    const isBroadcaster = incident.broadcaster.toString() === currentUserId;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isBroadcaster && !isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to rate responders' });
+    }
+
+    const responderEntry = incident.responders.find(r => r.user.toString() === responderId);
+    if (!responderEntry) {
+      return res.status(404).json({ message: 'Responder not found in incident' });
+    }
+
+    responderEntry.rating = rating;
+    await incident.save();
+    
+    res.json({ message: 'Rating updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
 

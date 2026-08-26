@@ -139,6 +139,31 @@ class SocketService {
     }
   }
 
+  // ── Phase 3: AI & Debrief ──
+  onAIReady(callback) {
+    if (this.socket) {
+      this.socket.on('sos:ai_ready', callback);
+    }
+  }
+
+  offAIReady(callback) {
+    if (this.socket) {
+      this.socket.off('sos:ai_ready', callback);
+    }
+  }
+
+  onDebriefReady(callback) {
+    if (this.socket) {
+      this.socket.on('sos:debrief_ready', callback);
+    }
+  }
+
+  offDebriefReady(callback) {
+    if (this.socket) {
+      this.socket.off('sos:debrief_ready', callback);
+    }
+  }
+
   // ── Generic error listener ──
   onError(callback) {
     if (this.socket) {

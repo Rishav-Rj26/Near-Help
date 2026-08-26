@@ -23,6 +23,24 @@ const ToggleContainer = styled('label', {
   marginBottom: '$lg',
 });
 
+const TextArea = styled('textarea', {
+  width: '100%',
+  minHeight: '60px',
+  padding: '$sm',
+  borderRadius: '$sm',
+  border: '1px solid #5B6B7C',
+  backgroundColor: 'transparent',
+  color: '$ink',
+  fontFamily: '$body',
+  fontSize: '14px',
+  marginBottom: '$lg',
+  resize: 'vertical',
+  '&:focus': {
+    outline: 'none',
+    borderColor: '$signal',
+  },
+});
+
 const CRISIS_TYPES = ['medical', 'fire', 'gas_leak', 'accident', 'threat', 'other'];
 const RADII = [500, 1000, 2000];
 
@@ -30,6 +48,7 @@ export default function SOSTriggerModal({ isOpen, onClose, onSubmit, location })
   const [selectedType, setSelectedType] = useState('medical');
   const [selectedRadius, setSelectedRadius] = useState(1000);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [details, setDetails] = useState('');
 
   if (!isOpen) return null;
 
@@ -38,6 +57,7 @@ export default function SOSTriggerModal({ isOpen, onClose, onSubmit, location })
       crisisType: selectedType,
       radius: selectedRadius,
       isAnonymous: selectedType === 'threat' ? isAnonymous : false,
+      details: details.trim(),
       location,
     });
   };
@@ -82,6 +102,13 @@ export default function SOSTriggerModal({ isOpen, onClose, onSubmit, location })
             />
           </ToggleContainer>
         )}
+
+        <h3 style={{ fontSize: '14px', marginBottom: '8px', textTransform: 'uppercase', color: '#5B6B7C' }}>Additional Details (Optional)</h3>
+        <TextArea 
+          placeholder="e.g., Number of injured, suspicious vehicle description..."
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+        />
 
         <Button intent="sos" size="block" onClick={handleSubmit}>
           BROADCAST SOS

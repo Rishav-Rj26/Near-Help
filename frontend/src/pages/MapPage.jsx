@@ -12,6 +12,7 @@ import SOSTriggerModal from '../components/SOSTriggerModal';
 import PulsingPinMarker from '../components/map/PulsingPinMarker';
 import ResponderMarkerLayer from '../components/map/ResponderMarkerLayer';
 import ActiveIncidentPanel from '../components/incident/ActiveIncidentPanel';
+import DebriefModal from '../components/incident/DebriefModal';
 
 // Helper component to center map on user location
 function RecenterAutomatically({ lat, lng }) {
@@ -30,6 +31,7 @@ export default function MapPage() {
   const [incidents, setIncidents] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState(null);
+  const [debriefData, setDebriefData] = useState(null);
 
   const locationIntervalRef = useRef(null);
 
@@ -86,9 +88,21 @@ export default function MapPage() {
       setSelectedIncident(incident);
     });
 
+    socketService.onDebriefReady((data) => {
+      // Only show debrief to the broadcaster of the incident
+      if (selectedIncident && (selectedIncident.incidentId || selectedIncident._id) === data.incidentId) {
+        setDebriefData({
+          incidentId: data.incidentId,
+          questions: data.questions,
+          responders: selectedIncident.responders || [],
+        });
+      }
+    });
+
     return () => {
       socketService.offSOSNew();
       socketService.offSOSTriggered();
+      socketService.offDebriefReady();
       if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
     };
   }, [user, navigate]);
@@ -193,6 +207,16 @@ export default function MapPage() {
             incident={selectedIncident}
             onClose={() => setSelectedIncident(null)}
             onResolved={handleIncidentResolved}
+        />
+      )}
+
+      {/* Phase 3: Debrief Modal */}
+      {debriefData && (
+        <DebriefModal
+          incidentId={debriefData.incidentId}
+          questions={debriefData.questions}
+          responders={debriefData.responders}
+          onClose={() => setDebriefData(null)}
         />
       )}
     </div>

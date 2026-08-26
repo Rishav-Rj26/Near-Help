@@ -57,6 +57,21 @@ const incidentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
+  details: {
+    type: String,
+    default: '',
+  },
+  aiGuidance: {
+    steps: [String],
+  },
+  aiSummary: {
+    summary: String,
+  },
+  debrief: {
+    wasReal: Boolean,
+    notes: String,
+    submittedAt: Date,
+  },
 }, { timestamps: true });
 
 // 2dsphere index for geospatial queries

@@ -7,6 +7,8 @@ import { TicketCard, TicketRow, TicketLabel, TicketNumber } from '../ui/TicketCa
 import { CrisisTag, TriageTag } from '../ui/TriageTag.stitch';
 import { Button } from '../ui/Button.stitch';
 import ChatThread from './ChatThread';
+import CrisisGuidanceCard from './CrisisGuidanceCard';
+import EmergencySummaryCard from './EmergencySummaryCard';
 
 const PanelOverlay = styled('div', {
   position: 'fixed',
@@ -46,24 +48,6 @@ const BroadcasterRow = styled('div', {
   borderBottom: '1px solid rgba(11, 31, 51, 0.1)',
   marginBottom: '$md',
   fontSize: '$subtitle',
-});
-
-const GuidanceCard = styled('div', {
-  backgroundColor: '$surfaceLight',
-  borderRadius: '$md',
-  padding: '$sm $md',
-  marginBottom: '$md',
-});
-
-const GuidanceStep = styled('div', {
-  fontSize: '$subtitle',
-  color: '$ink',
-  lineHeight: 1.6,
-  '& span': {
-    fontFamily: '$mono',
-    color: '$crisisMedical',
-    marginRight: '$xs',
-  },
 });
 
 const SectionTitle = styled('div', {
@@ -107,6 +91,11 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
   const [responders, setResponders] = useState(incident.responders || []);
   const [hasJoined, setHasJoined] = useState(false);
   const [activeChatResponderId, setActiveChatResponderId] = useState(null);
+  
+  // Phase 3 AI State
+  const [aiGuidance, setAiGuidance] = useState(incident.aiGuidance || null);
+  const [aiSummary, setAiSummary] = useState(incident.aiSummary || null);
+  const [aiLoading, setAiLoading] = useState(!incident.aiGuidance);
 
   const incidentId = incident.incidentId || incident._id;
   const isBroadcaster = incident.broadcaster?.toString() === user?.id ||
@@ -156,6 +145,20 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
     return () => socketService.offSOSResolved(handleResolved);
   }, [incidentId, onResolved, onClose]);
 
+  // Phase 3: Listen for AI ready event
+  useEffect(() => {
+    const handleAIReady = (data) => {
+      if (data.incidentId === incidentId) {
+        setAiGuidance(data.aiGuidance);
+        setAiSummary(data.aiSummary);
+        setAiLoading(false);
+      }
+    };
+
+    socketService.onAIReady(handleAIReady);
+    return () => socketService.offAIReady(handleAIReady);
+  }, [incidentId]);
+
   const handleJoin = () => {
     socketService.joinAsResponder(incidentId);
     setHasJoined(true);
@@ -167,12 +170,6 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
   };
 
   const ticketNum = incidentId?.toString().slice(-3) || '000';
-
-  // AI guidance placeholder for Phase 3
-  const guidanceSteps = [
-    'Check responsiveness and breathing',
-    'Call emergency services if not already done',
-  ];
 
   return (
     <PanelOverlay>
@@ -217,16 +214,9 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
           );
         })}
 
-        {/* AI Guidance placeholder */}
-        <GuidanceCard>
-          <TicketLabel>AI first-response guidance</TicketLabel>
-          {guidanceSteps.map((step, i) => (
-            <GuidanceStep key={step}>
-              <span>{String(i + 1).padStart(2, '0')}</span>
-              {step}
-            </GuidanceStep>
-          ))}
-        </GuidanceCard>
+        {/* Phase 3: AI Crisis Assistant */}
+        <CrisisGuidanceCard steps={aiGuidance?.steps} loading={aiLoading} />
+        {!aiLoading && aiSummary && <EmergencySummaryCard summary={aiSummary?.summary} />}
 
         {/* Chat thread */}
         {activeChatResponderId && (

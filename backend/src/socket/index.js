@@ -4,6 +4,9 @@ import { Incident } from '../models/incident.model.js';
 import { User } from '../models/user.model.js';
 import { ChatMessage } from '../models/chatMessage.model.js';
 import { findUsersNear, updateUserLocation } from '../controllers/geospatial.controller.js';
+import { generateCrisisGuidance } from '../services/ai/crisisGuidance.service.js';
+import { generateEmergencySummary } from '../services/ai/emergencySummary.service.js';
+import { generateDebriefQuestions } from '../services/ai/debriefPrompt.service.js';
 
 let io;
 // In-memory store mapping userId -> socketId
@@ -60,7 +63,7 @@ export const initSocket = (server) => {
     // ─────────────────────────────────────────────
     socket.on('sos:trigger', async (payload) => {
       try {
-        const { crisisType, location, radius, isAnonymous } = payload;
+        const { crisisType, location, radius, isAnonymous, details } = payload;
         
         // 1. Identity from JWT
         const broadcasterId = userId;
@@ -72,6 +75,7 @@ export const initSocket = (server) => {
           location: { type: 'Point', coordinates: [location.lng, location.lat] },
           radius: radius || 1000,
           isAnonymous: isAnonymous || false,
+          details: details || '',
         });
 
         const broadcasterUser = await User.findById(broadcasterId);
@@ -123,6 +127,34 @@ export const initSocket = (server) => {
         socket.emit('sos:triggered', { ...emitPayload, notifiedCount });
         console.log(`SOS triggered by ${broadcasterId}, notified ${notifiedCount} users`);
 
+        // Phase 3: AI generation — runs AFTER fan-out, never blocks broadcast
+        (async () => {
+          try {
+            const [guidanceResult, summaryResult] = await Promise.all([
+              generateCrisisGuidance({ crisisType, details: incident.details }),
+              generateEmergencySummary({
+                crisisType,
+                location: { lng: location.lng, lat: location.lat },
+                details: incident.details,
+                radius: incident.radius,
+                responderCount: 0,
+              }),
+            ]);
+            
+            incident.aiGuidance = guidanceResult;
+            incident.aiSummary = summaryResult;
+            await incident.save();
+
+            io.to(`incident:${incident._id}`).emit('sos:ai_ready', {
+              incidentId: incident._id,
+              aiGuidance: guidanceResult,
+              aiSummary: summaryResult,
+            });
+          } catch (err) {
+            console.error('AI generation failed (non-blocking):', err);
+          }
+        })();
+
       } catch (err) {
         console.error('Error in sos:trigger:', err);
         socket.emit('error', { code: 'SOS_ERROR', message: err.message });
@@ -155,6 +187,8 @@ export const initSocket = (server) => {
             incidentId,
             responder: { id: userId, name: socket.data.user.name, hasRelevantSkill: false },
             alreadyJoined: true,
+            aiGuidance: incident.aiGuidance,
+            aiSummary: incident.aiSummary,
           });
         }
 
@@ -177,6 +211,8 @@ export const initSocket = (server) => {
             name: responderUser?.name || socket.data.user.name,
             hasRelevantSkill: false,
           },
+          aiGuidance: incident.aiGuidance,
+          aiSummary: incident.aiSummary,
         });
 
         console.log(`Responder ${userId} joined incident ${incidentId}`);
@@ -307,6 +343,19 @@ export const initSocket = (server) => {
 
         // Emit to room
         io.to(`incident:${incidentId}`).emit('sos:resolved', { incidentId });
+
+        // Phase 3: Generate debrief questions for the broadcaster
+        (async () => {
+          try {
+            const debriefResult = await generateDebriefQuestions({ crisisType: incident.crisisType });
+            socket.emit('sos:debrief_ready', {
+              incidentId,
+              questions: debriefResult.questions,
+            });
+          } catch (err) {
+            console.error('Debrief generation failed (non-blocking):', err);
+          }
+        })();
 
         // Room cleanup: have all sockets leave
         const room = `incident:${incidentId}`;
