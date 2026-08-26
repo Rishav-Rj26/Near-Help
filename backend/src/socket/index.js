@@ -7,6 +7,7 @@ import { findUsersNear, updateUserLocation, findNearbyServices } from '../contro
 import { generateDebriefQuestions } from '../services/ai/debriefPrompt.service.js';
 import { hasRelevantSkill, getTopMatchedSkill } from '../utils/skillMatch.js';
 import { createAndBroadcastIncident } from '../services/incident/createAndBroadcastIncident.js';
+import { isSafeText, isValidObjectId, parseCoordinates } from '../utils/validation.js';
 
 let io;
 // In-memory store mapping userId -> socketId
@@ -52,7 +53,9 @@ export const initSocket = (server) => {
     // ─────────────────────────────────────────────
     socket.on('location:update', async ({ lng, lat }) => {
       try {
-        await updateUserLocation(userId, lng, lat);
+        const coordinates = parseCoordinates(lng, lat);
+        if (!coordinates) return socket.emit('error', { code: 'INVALID_LOCATION', message: 'Provide a valid location.' });
+        await updateUserLocation(userId, coordinates.lng, coordinates.lat);
         console.log(`Updated location for user ${userId}`);
       } catch (err) {
         console.error('Error updating location:', err);
@@ -101,6 +104,7 @@ export const initSocket = (server) => {
     // ─────────────────────────────────────────────
     socket.on('responder:join', async ({ incidentId }) => {
       try {
+        if (!isValidObjectId(incidentId)) return socket.emit('error', { code: 'INVALID_INCIDENT', message: 'Invalid incident.' });
         const incident = await Incident.findById(incidentId);
         if (!incident) {
           return socket.emit('error', { code: 'NOT_FOUND', message: 'Incident not found' });
@@ -181,6 +185,8 @@ export const initSocket = (server) => {
     // ─────────────────────────────────────────────
     socket.on('responder:location', async ({ incidentId, lng, lat }) => {
       try {
+        const coordinates = parseCoordinates(lng, lat);
+        if (!isValidObjectId(incidentId) || !coordinates) return;
         // Server-side throttle: ignore updates more frequent than 3s
         const throttleKey = `${incidentId}:${userId}`;
         const now = Date.now();
@@ -205,7 +211,7 @@ export const initSocket = (server) => {
 
         responderEntry.lastLocation = {
           type: 'Point',
-          coordinates: [parseFloat(lng), parseFloat(lat)],
+          coordinates: [coordinates.lng, coordinates.lat],
         };
         responderEntry.lastLocationAt = new Date();
         await incident.save();
@@ -214,7 +220,7 @@ export const initSocket = (server) => {
         io.to(`incident:${incidentId}`).emit('responder:location:update', {
           incidentId,
           responderId: userId,
-          coordinates: [parseFloat(lng), parseFloat(lat)],
+          coordinates: [coordinates.lng, coordinates.lat],
           timestamp: responderEntry.lastLocationAt,
         });
       } catch (err) {
@@ -230,6 +236,10 @@ export const initSocket = (server) => {
       try {
         const senderId = userId; // from JWT, never from payload
 
+        if (!isValidObjectId(incidentId) || !isValidObjectId(responderId) || !isSafeText(text, { max: 2000 })) {
+          return socket.emit('error', { code: 'INVALID_MESSAGE', message: 'Message details are invalid.' });
+        }
+
         const incident = await Incident.findById(incidentId);
         if (!incident) {
           return socket.emit('error', { code: 'NOT_FOUND', message: 'Incident not found' });
@@ -237,9 +247,10 @@ export const initSocket = (server) => {
 
         // Validate sender is either the broadcaster OR the specific responderId
         const isBroadcaster = incident.broadcaster.toString() === senderId;
-        const isResponder = responderId === senderId;
+        const responderExists = incident.responders.some((responder) => responder.user.toString() === responderId);
+        const isResponder = responderId === senderId && responderExists;
 
-        if (!isBroadcaster && !isResponder) {
+        if ((!isBroadcaster && !isResponder) || !responderExists || incident.status !== 'active') {
           return socket.emit('error', {
             code: 'CHAT_UNAUTHORIZED',
             message: 'You are not authorized to post in this chat thread',
@@ -251,7 +262,7 @@ export const initSocket = (server) => {
           incident: incidentId,
           responder: responderId,
           sender: senderId,
-          text,
+          text: text.trim(),
         });
 
         // Emit to room — the frontend handles anonymous rendering
@@ -259,7 +270,7 @@ export const initSocket = (server) => {
           incidentId,
           responderId,
           sender: senderId,
-          text,
+          text: text.trim(),
           sentAt: chatMessage.sentAt,
         });
       } catch (err) {
@@ -273,6 +284,7 @@ export const initSocket = (server) => {
     // ─────────────────────────────────────────────
     socket.on('sos:resolve', async ({ incidentId }) => {
       try {
+        if (!isValidObjectId(incidentId)) return socket.emit('error', { code: 'INVALID_INCIDENT', message: 'Invalid incident.' });
         const incident = await Incident.findById(incidentId);
         if (!incident) {
           return socket.emit('error', { code: 'NOT_FOUND', message: 'Incident not found' });

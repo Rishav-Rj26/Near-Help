@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -111,15 +111,7 @@ export default function AdminDashboardPage() {
   const [flaggedUsers, setFlaggedUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  if (user?.role !== 'admin') {
-    return <Navigate to="/" replace />;
-  }
-
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const [analyticsRes, incidentsRes, usersRes] = await Promise.all([
@@ -136,7 +128,15 @@ export default function AdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (user?.role === 'admin') loadDashboardData();
+  }, [user?.role, loadDashboardData]);
+
+  if (user?.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
 
   const handleToggleSuspend = async (userId, isSuspended) => {
     try {

@@ -9,6 +9,7 @@ import userRoutes from './routes/user.routes.js';
 import incidentRoutes from './routes/incident.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import smsRoutes from './routes/sms.routes.js';
+import { createRateLimiter, errorHandler, notFound, requestContext, securityHeaders } from './middleware/security.middleware.js';
 
 dotenv.config();
 
@@ -16,11 +17,20 @@ const app = express();
 const httpServer = createServer(app);
 
 // Middleware
+app.disable('x-powered-by');
+app.use(requestContext);
+app.use(securityHeaders);
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 }));
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
+app.use(createRateLimiter({ windowMs: 15 * 60 * 1000, max: 600, message: 'Too many requests. Please try again shortly.' }));
+
+app.get('/health', (req, res) => {
+  const databaseReady = mongoose.connection.readyState === 1;
+  res.status(databaseReady ? 200 : 503).json({ status: databaseReady ? 'ok' : 'degraded', database: databaseReady ? 'connected' : 'disconnected', requestId: req.requestId });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -28,6 +38,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/sms', smsRoutes);
+app.use(notFound);
+app.use(errorHandler);
 
 // Database connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/nearhelp';

@@ -4,6 +4,7 @@ import { findActiveIncidentsNear } from '../controllers/geospatial.controller.js
 import { Incident } from '../models/incident.model.js';
 import { ChatMessage } from '../models/chatMessage.model.js';
 import { User } from '../models/user.model.js';
+import { isSafeText, isValidObjectId, parseCoordinates } from '../utils/validation.js';
 
 const router = express.Router();
 
@@ -11,11 +12,13 @@ router.get('/nearby', protect, async (req, res) => {
   try {
     const { lng, lat, radius = 5000 } = req.query; // default 5km for viewing map
 
-    if (!lng || !lat) {
+    const coordinates = parseCoordinates(lng, lat);
+    const safeRadius = Number(radius);
+    if (!coordinates || !Number.isFinite(safeRadius) || safeRadius < 100 || safeRadius > 20000) {
       return res.status(400).json({ message: 'lng and lat are required query parameters' });
     }
 
-    const incidents = await findActiveIncidentsNear(lng, lat, radius);
+    const incidents = await findActiveIncidentsNear(coordinates.lng, coordinates.lat, safeRadius);
     
     // PII Stripping for anonymous incidents in the API response
     const sanitizedIncidents = incidents.map(incident => {
@@ -42,6 +45,9 @@ router.get('/:id/messages', protect, async (req, res) => {
     const { responderId } = req.query;
     const currentUserId = req.user.id;
 
+    if (!isValidObjectId(id) || !isValidObjectId(responderId)) {
+      return res.status(400).json({ message: 'Invalid incident or responder id' });
+    }
     if (!responderId) {
       return res.status(400).json({ message: 'responderId query param is required' });
     }
@@ -53,9 +59,10 @@ router.get('/:id/messages', protect, async (req, res) => {
     }
 
     const isBroadcaster = incident.broadcaster.toString() === currentUserId;
-    const isResponder = responderId === currentUserId;
+    const isResponder = responderId === currentUserId && incident.responders.some((responder) => responder.user.toString() === currentUserId);
+    const responderExists = incident.responders.some((responder) => responder.user.toString() === responderId);
 
-    if (!isBroadcaster && !isResponder) {
+    if ((!isBroadcaster && !isResponder) || !responderExists) {
       return res.status(403).json({ message: 'Not authorized to view this chat thread' });
     }
 
@@ -75,6 +82,7 @@ router.get('/:id/messages', protect, async (req, res) => {
 router.get('/:id', protect, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) return res.status(400).json({ message: 'Invalid incident id' });
     const incident = await Incident.findById(id).populate('broadcaster', 'name avatarUrl');
     
     if (!incident) {
@@ -105,6 +113,9 @@ router.post('/:id/debrief', protect, async (req, res) => {
     const { id } = req.params;
     const { wasReal, notes } = req.body;
     const currentUserId = req.user.id;
+    if (!isValidObjectId(id) || typeof wasReal !== 'boolean' || !isSafeText(notes ?? '', { min: 0, max: 2000 })) {
+      return res.status(400).json({ message: 'Provide a valid incident and debrief details' });
+    }
 
     const incident = await Incident.findById(id);
     if (!incident) {
@@ -155,7 +166,7 @@ router.patch('/:id/responders/:responderId/rating', protect, async (req, res) =>
     const { rating } = req.body;
     const currentUserId = req.user.id;
 
-    if (rating < 1 || rating > 5) {
+    if (!isValidObjectId(id) || !isValidObjectId(responderId) || !Number.isInteger(rating) || rating < 1 || rating > 5) {
       return res.status(400).json({ message: 'Rating must be between 1 and 5' });
     }
 
@@ -201,4 +212,3 @@ router.patch('/:id/responders/:responderId/rating', protect, async (req, res) =>
 });
 
 export default router;
-

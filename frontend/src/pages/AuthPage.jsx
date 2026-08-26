@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { TicketCard, TicketRow, TicketLabel } from '../components/ui/TicketCard.stitch';
+import { TicketCard, TicketLabel } from '../components/ui/TicketCard.stitch';
 import { Button } from '../components/ui/Button.stitch';
 import { styled } from '../styles/theme';
 
@@ -56,7 +56,7 @@ export default function AuthPage() {
         await signup(name, email, password);
       }
       navigate('/');
-    } catch (err) {
+    } catch {
       // Error is handled in context and surfaced via `error` prop
     }
   };
@@ -79,6 +79,8 @@ export default function AuthPage() {
                 placeholder="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                minLength={2}
+                maxLength={80}
                 required
               />
             </>
@@ -99,6 +101,8 @@ export default function AuthPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            minLength={isLogin ? 1 : 8}
+            maxLength={128}
             required
           />
 

@@ -3,7 +3,7 @@ import { styled } from '../../styles/theme';
 import { useAuth } from '../../context/AuthContext';
 import { socketService } from '../../services/socket';
 
-import { TicketCard, TicketRow, TicketLabel, TicketNumber } from '../ui/TicketCard.stitch';
+import { TicketCard, TicketLabel, TicketNumber } from '../ui/TicketCard.stitch';
 import { CrisisTag, TriageTag } from '../ui/TriageTag.stitch';
 import { Button } from '../ui/Button.stitch';
 import ChatThread from './ChatThread';

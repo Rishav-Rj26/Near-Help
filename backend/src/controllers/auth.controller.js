@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/user.model.js';
+import { isSafeText, isValidEmail, normalizeEmail } from '../utils/validation.js';
 
 const generateToken = (id, name, role) => {
   return jwt.sign({ id, name, role }, process.env.JWT_SECRET, {
@@ -10,7 +11,12 @@ const generateToken = (id, name, role) => {
 
 export const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, password } = req.body;
+    const email = normalizeEmail(req.body.email);
+
+    if (!isSafeText(name, { min: 2, max: 80 }) || !isValidEmail(email) || !isSafeText(password, { min: 8, max: 128 })) {
+      return res.status(400).json({ message: 'Provide a name, valid email, and password of at least 8 characters.' });
+    }
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -46,7 +52,11 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const { password } = req.body;
+    if (!isValidEmail(email) || !isSafeText(password, { min: 1, max: 128 })) {
+      return res.status(400).json({ message: 'Invalid email or password' });
+    }
 
     const user = await User.findOne({ email });
 

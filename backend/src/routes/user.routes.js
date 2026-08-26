@@ -4,6 +4,7 @@ import { updateUserLocation } from '../controllers/geospatial.controller.js';
 import { VALID_SKILLS } from '../utils/skillMatch.js';
 import { User } from '../models/user.model.js';
 import { Incident } from '../models/incident.model.js';
+import { parseCoordinates } from '../utils/validation.js';
 
 const router = express.Router();
 
@@ -66,7 +67,10 @@ router.put('/location', protect, async (req, res) => {
       return res.status(400).json({ message: 'lng and lat are required' });
     }
 
-    const updatedUser = await updateUserLocation(req.user.id, lng, lat);
+    const coordinates = parseCoordinates(lng, lat);
+    if (!coordinates) return res.status(400).json({ message: 'Provide valid longitude and latitude values' });
+
+    const updatedUser = await updateUserLocation(req.user.id, coordinates.lng, coordinates.lat);
     res.json({ message: 'Location updated', location: updatedUser.location });
   } catch (error) {
     res.status(500).json({ message: error.message });

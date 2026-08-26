@@ -146,7 +146,7 @@ export default function ProfilePage() {
   return (
     <Container>
       <Header>
-        <Title>Profile</Title>
+        <Title>{profile?.name ? `${profile.name}'s Profile` : 'Profile'}</Title>
         <Button onClick={() => navigate(-1)} style={{ background: 'none', border: '1px solid #E8EAED', color: '#0B1F33' }}>
           Back to Map
         </Button>

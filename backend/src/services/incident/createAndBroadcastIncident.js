@@ -3,6 +3,7 @@ import { Incident } from '../../models/incident.model.js';
 import { findUsersNear, findNearbyServices } from '../../controllers/geospatial.controller.js';
 import { generateCrisisGuidance } from '../ai/crisisGuidance.service.js';
 import { generateEmergencySummary } from '../ai/emergencySummary.service.js';
+import { isSafeText, parseCoordinates } from '../../utils/validation.js';
 
 // Throttle map for sos:trigger — key: userId, value: last timestamp
 export const triggerThrottleMap = new Map();
@@ -25,6 +26,15 @@ export const createAndBroadcastIncident = async ({
   isAnonymous = false,
   source = 'socket' // 'socket' or 'sms'
 }) => {
+  const coordinates = parseCoordinates(location?.lng, location?.lat);
+  const allowedCrisisTypes = ['medical', 'fire', 'gas_leak', 'accident', 'threat', 'other'];
+  const safeRadius = Number(radiusMeters);
+  if (!coordinates || !allowedCrisisTypes.includes(crisisType) || ![500, 1000, 2000].includes(safeRadius) || !isSafeText(details, { min: 0, max: 2000 }) || typeof isAnonymous !== 'boolean') {
+    const err = new Error('Invalid SOS details. Check the location and incident information.');
+    err.code = 'INVALID_SOS';
+    throw err;
+  }
+
   // 1. Trust check: load user to see if they are suspended
   const userDoc = await User.findById(broadcasterUserId).select('trust name avatarUrl');
   if (userDoc?.trust?.isSuspended) {
@@ -54,14 +64,14 @@ export const createAndBroadcastIncident = async ({
   const incident = await Incident.create({
     broadcaster: broadcasterUserId,
     crisisType,
-    location: { type: 'Point', coordinates: [location.lng, location.lat] },
-    radius: radiusMeters,
+    location: { type: 'Point', coordinates: [coordinates.lng, coordinates.lat] },
+    radius: safeRadius,
     isAnonymous,
     details,
   });
 
   // 5. Find nearby users
-  const nearbyUsers = await findUsersNear(location.lng, location.lat, incident.radius);
+  const nearbyUsers = await findUsersNear(coordinates.lng, coordinates.lat, incident.radius);
 
   // 6. Build payload with PII stripping
   const basePayload = {
@@ -110,12 +120,12 @@ export const createAndBroadcastIncident = async ({
         generateCrisisGuidance({ crisisType, details: incident.details }),
         generateEmergencySummary({
           crisisType,
-          location: { lng: location.lng, lat: location.lat },
+          location: coordinates,
           details: incident.details,
           radius: incident.radius,
           responderCount: 0,
         }),
-        findNearbyServices(location.lng, location.lat, incident.radius, 3), // Get top 3 nearby services
+        findNearbyServices(coordinates.lng, coordinates.lat, incident.radius, 3), // Get top 3 nearby services
       ]);
       
       incident.aiGuidance = guidanceResult;

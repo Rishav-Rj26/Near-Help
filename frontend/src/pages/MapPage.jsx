@@ -51,6 +51,7 @@ export default function MapPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [debriefData, setDebriefData] = useState(null);
+  const [locationError, setLocationError] = useState(null);
 
   const locationIntervalRef = useRef(null);
 
@@ -75,7 +76,7 @@ export default function MapPage() {
     } else {
       navigator.geolocation.getCurrentPosition(
         (pos) => updateLoc(pos.coords.latitude, pos.coords.longitude),
-        (err) => console.error("Geolocation error:", err),
+        () => setLocationError('Location access is unavailable. Showing Delhi until you enable GPS.'),
         { enableHighAccuracy: true }
       );
     }
@@ -177,6 +178,7 @@ export default function MapPage() {
       setIncidents(data);
     } catch (err) {
       console.error('Failed to update location/fetch incidents', err);
+      setLocationError('Unable to refresh nearby incidents. Check your connection and try again.');
     }
   };
 
@@ -199,6 +201,11 @@ export default function MapPage() {
       <ProfileButton onClick={() => navigate('/profile')} title="My Profile">
         👤
       </ProfileButton>
+      {locationError && (
+        <div role="alert" style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 1001, maxWidth: '300px', padding: '10px 14px', borderRadius: '8px', background: '#FFF3CD', color: '#5C4300', fontSize: '13px' }}>
+          {locationError}
+        </div>
+      )}
 
       <MapContainer 
         center={[location.lat, location.lng]} 
