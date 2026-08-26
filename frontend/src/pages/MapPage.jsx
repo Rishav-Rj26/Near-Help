@@ -54,6 +54,11 @@ export default function MapPage() {
   const [locationError, setLocationError] = useState(null);
 
   const locationIntervalRef = useRef(null);
+  const locationRef = useRef(location);
+
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
 
   useEffect(() => {
     if (!user) {
@@ -130,9 +135,10 @@ export default function MapPage() {
     // Handle reconnection by re-fetching incidents and re-joining room if active
     const handleReconnect = async () => {
       console.log('Socket reconnected, refreshing state...');
-      if (location.lat && location.lng) {
+      const currentLoc = locationRef.current;
+      if (currentLoc.lat && currentLoc.lng) {
         try {
-          const { data } = await fetchNearbyIncidents(location.lng, location.lat, 5000);
+          const { data } = await fetchNearbyIncidents(currentLoc.lng, currentLoc.lat, 5000);
           setIncidents(data);
           
           // Re-join the active incident room if we were looking at one
@@ -153,7 +159,7 @@ export default function MapPage() {
       socketService.offReconnect(handleReconnect);
       if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
     };
-  }, [user, navigate, location, selectedIncident]);
+  }, [user, navigate, selectedIncident]);
 
   // Phase 2: Location sharing loop for responders
   useEffect(() => {
