@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Users, MessageCircle, CheckCircle, Zap, MapPin, Phone } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { socketService } from '../../services/socket';
 
@@ -7,12 +9,12 @@ import CrisisGuidanceCard from './CrisisGuidanceCard';
 import EmergencySummaryCard from './EmergencySummaryCard';
 
 const CRISIS_COLORS = {
-  medical: 'bg-blue-500',
-  fire: 'bg-red-500',
-  gas_leak: 'bg-orange-500',
-  accident: 'bg-purple-500',
-  threat: 'bg-rose-800',
-  other: 'bg-slate-500',
+  medical: { bg: 'from-blue-500 to-blue-600', text: 'text-blue-400', badge: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
+  fire: { bg: 'from-red-500 to-red-600', text: 'text-red-400', badge: 'bg-red-500/20 text-red-300 border-red-500/30' },
+  gas_leak: { bg: 'from-orange-500 to-orange-600', text: 'text-orange-400', badge: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
+  accident: { bg: 'from-purple-500 to-purple-600', text: 'text-purple-400', badge: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+  threat: { bg: 'from-rose-600 to-rose-700', text: 'text-rose-400', badge: 'bg-rose-500/20 text-rose-300 border-rose-500/30' },
+  other: { bg: 'from-slate-500 to-slate-600', text: 'text-slate-400', badge: 'bg-slate-500/20 text-slate-300 border-slate-500/30' },
 };
 
 export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
@@ -20,7 +22,6 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
   const [responders, setResponders] = useState(incident.responders || []);
   const [hasJoined, setHasJoined] = useState(false);
   const [activeChatResponderId, setActiveChatResponderId] = useState(null);
-  
   const [aiGuidance, setAiGuidance] = useState(incident.aiGuidance || null);
   const [aiSummary, setAiSummary] = useState(incident.aiSummary || null);
   const [nearbyServices, setNearbyServices] = useState(incident.nearbyServices || []);
@@ -28,47 +29,35 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
 
   const incidentId = incident.incidentId || incident._id;
   const isBroadcaster = incident.broadcaster?.toString() === user?.id || incident.broadcaster === user?.id;
+  const colors = CRISIS_COLORS[incident.crisisType] || CRISIS_COLORS.other;
 
   useEffect(() => {
-    const alreadyResponder = responders.some(
-      (r) => (r.user?.toString() === user?.id) || (r.user === user?.id) || (r.id === user?.id)
-    );
-    setHasJoined(alreadyResponder);
-
-    if (alreadyResponder && !isBroadcaster) {
-      setActiveChatResponderId(user.id);
-    }
+    const already = responders.some(r => (r.user?.toString() === user?.id) || (r.user === user?.id) || (r.id === user?.id));
+    setHasJoined(already);
+    if (already && !isBroadcaster) setActiveChatResponderId(user.id);
   }, [responders, user, isBroadcaster]);
 
   useEffect(() => {
-    const handleResponderJoined = (data) => {
+    const handle = (data) => {
       if (data.incidentId === incidentId) {
-        setResponders((prev) => {
-          const exists = prev.some(
-            (r) => (r.id === data.responder.id) || (r.user?.toString() === data.responder.id)
-          );
-          if (exists) return prev;
-          return [...prev, data.responder];
+        setResponders(prev => {
+          const exists = prev.some(r => (r.id === data.responder.id) || (r.user?.toString() === data.responder.id));
+          return exists ? prev : [...prev, data.responder];
         });
       }
     };
-    socketService.onResponderJoined(handleResponderJoined);
-    return () => socketService.offResponderJoined(handleResponderJoined);
+    socketService.onResponderJoined(handle);
+    return () => socketService.offResponderJoined(handle);
   }, [incidentId]);
 
   useEffect(() => {
-    const handleResolved = (data) => {
-      if (data.incidentId === incidentId) {
-        onResolved?.(incidentId);
-        onClose?.();
-      }
-    };
-    socketService.onSOSResolved(handleResolved);
-    return () => socketService.offSOSResolved(handleResolved);
+    const handle = (data) => { if (data.incidentId === incidentId) { onResolved?.(incidentId); onClose?.(); } };
+    socketService.onSOSResolved(handle);
+    return () => socketService.offSOSResolved(handle);
   }, [incidentId, onResolved, onClose]);
 
   useEffect(() => {
-    const handleAIReady = (data) => {
+    const handle = (data) => {
       if (data.incidentId === incidentId) {
         setAiGuidance(data.aiGuidance);
         setAiSummary(data.aiSummary);
@@ -76,75 +65,85 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
         setAiLoading(false);
       }
     };
-    socketService.onAIReady(handleAIReady);
-    return () => socketService.offAIReady(handleAIReady);
+    socketService.onAIReady(handle);
+    return () => socketService.offAIReady(handle);
   }, [incidentId]);
-
-  const handleJoin = () => {
-    socketService.joinAsResponder(incidentId);
-    setHasJoined(true);
-    setActiveChatResponderId(user.id);
-  };
-
-  const handleResolve = () => {
-    socketService.resolveIncident(incidentId);
-  };
 
   const ticketNum = incidentId?.toString().slice(-3) || '000';
   const radiusLabel = incident.radius >= 1000 ? `${incident.radius / 1000}km` : `${incident.radius}m`;
-  const typeColor = CRISIS_COLORS[incident.crisisType] || CRISIS_COLORS.other;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[1100] max-h-[85vh] overflow-y-auto bg-slate-900 border-t-[3px] border-white shadow-[0_-8px_0px_0px_rgba(255,255,255,0.1)] p-4 sm:p-6 transition-transform animate-in slide-in-from-bottom">
-      <div className="max-w-2xl mx-auto flex flex-col gap-4">
-        
+    <motion.div
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      exit={{ y: '100%' }}
+      transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      className="fixed bottom-0 left-0 right-0 z-[1100] max-h-[85vh] overflow-y-auto glass rounded-t-3xl shadow-2xl shadow-black/50"
+    >
+      <div className="max-w-2xl mx-auto p-6 flex flex-col gap-5">
+        {/* Drag indicator */}
+        <div className="w-10 h-1 bg-slate-600 rounded-full mx-auto -mt-1 mb-1" />
+
         {/* Header */}
-        <div className="flex items-center justify-between border-b-2 border-slate-700 pb-4">
-          <span className="font-mono font-bold text-white uppercase tracking-widest">Ticket #{ticketNum}</span>
-          <button onClick={onClose} className="text-3xl text-slate-400 hover:text-white leading-none">&times;</button>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${colors.bg} flex items-center justify-center shadow-lg`}>
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-white font-bold">Ticket #{ticketNum}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${colors.badge}`}>
+                  {incident.crisisType.replace('_', ' ').toUpperCase()}
+                </span>
+              </div>
+              <span className="text-xs text-slate-400">Radius: {radiusLabel}</span>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* Tags & Reporter */}
-        <div className="flex flex-col gap-3">
-          <div className="flex gap-2">
-            <span className={`px-2 py-1 text-xs font-black uppercase tracking-widest text-white ${typeColor}`}>
-              {incident.crisisType.replace('_', ' ')}
-            </span>
-            <span className="px-2 py-1 text-xs font-black uppercase tracking-widest border border-slate-600 text-slate-400">
-              {radiusLabel}
-            </span>
+        {/* Reporter */}
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-800/30 border border-slate-700/30 text-sm">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+            <Users className="w-4 h-4 text-indigo-400" />
           </div>
-          <div className="flex items-center gap-2 text-sm font-bold text-white py-2 border-b border-slate-800">
-            <span>&#128065;</span>
-            <span>{incident.isAnonymous ? 'Anonymous reporter' : (incident.broadcasterName || 'Reporter')}</span>
-          </div>
+          <span className="text-white font-medium">
+            {incident.isAnonymous ? 'Anonymous reporter' : (incident.broadcasterName || 'Reporter')}
+          </span>
         </div>
 
         {/* Responders */}
         <div>
-          <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-slate-400 mb-2 mt-4">
-            Responders &middot; {responders.length}
-          </h3>
-          {responders.length === 0 && (
-            <div className="text-sm font-mono text-slate-500 py-2">No responders yet</div>
-          )}
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Responders</h3>
+            <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold">{responders.length}</span>
+          </div>
+          {responders.length === 0 && <p className="text-sm text-slate-500 italic">Waiting for responders...</p>}
           <div className="flex flex-col gap-2">
-            {responders.map((r) => {
+            {responders.map(r => {
               const rId = r.id || r.user?.toString() || r.user;
-              const rName = r.name || 'Responder';
               return (
-                <div 
+                <motion.div
                   key={rId}
+                  whileHover={{ x: 4 }}
                   onClick={() => isBroadcaster && setActiveChatResponderId(rId)}
-                  className={`flex items-center justify-between p-3 bg-slate-950 border border-slate-800 transition-colors ${isBroadcaster ? 'cursor-pointer hover:border-slate-500' : ''}`}
+                  className={`flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-slate-700/30 transition-all ${isBroadcaster ? 'cursor-pointer hover:bg-slate-800/50 hover:border-indigo-500/30' : ''}`}
                 >
-                  <span className="font-bold text-white text-sm">{rName}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center text-white text-xs font-bold">
+                      {(r.name || 'R')[0].toUpperCase()}
+                    </div>
+                    <span className="text-white text-sm font-medium">{r.name || 'Responder'}</span>
+                  </div>
                   {r.hasRelevantSkill && (
-                    <span className="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500 text-xs font-black uppercase tracking-widest">
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
                       {r.topSkill || 'Skilled'}
                     </span>
                   )}
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -156,29 +155,33 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
 
         {!aiLoading && nearbyServices.length > 0 && (
           <div>
-            <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-slate-400 mb-2 mt-4">
-              Nearby Services
-            </h3>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Nearby Services</h3>
             <div className="flex flex-col gap-2">
               {nearbyServices.map((service, idx) => (
-                <div key={idx} className="p-3 bg-slate-950 border border-slate-800 text-sm">
-                  <div className="font-bold text-white">{service.name}</div>
-                  <div className="flex justify-between mt-1 font-mono text-xs text-slate-400">
-                    <span className="uppercase">{service.type.replace('_', ' ')}</span>
-                    <span>{service.phone || 'No phone'}</span>
+                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-slate-700/30">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-emerald-400" />
+                    <div>
+                      <div className="text-sm font-medium text-white">{service.name}</div>
+                      <div className="text-xs text-slate-400 capitalize">{service.type.replace('_', ' ')}</div>
+                    </div>
                   </div>
+                  {service.phone && <span className="text-xs text-indigo-300 font-mono">{service.phone}</span>}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Chat Thread */}
+        {/* Chat */}
         {activeChatResponderId && (
-          <div className="mt-4 pt-4 border-t-2 border-slate-800">
-            <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-slate-400 mb-2">
-              Chat {isBroadcaster ? `with responder` : 'with broadcaster'}
-            </h3>
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <MessageCircle className="w-4 h-4 text-indigo-400" />
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Chat {isBroadcaster ? 'with responder' : 'with broadcaster'}
+              </h3>
+            </div>
             <ChatThread
               incidentId={incidentId}
               responderId={activeChatResponderId}
@@ -190,24 +193,30 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
         )}
 
         {/* Actions */}
-        <div className="mt-4">
+        <div className="pb-2">
           {isBroadcaster ? (
-            <button 
-              onClick={handleResolve}
-              className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-black text-sm tracking-widest uppercase border-[3px] border-green-600 hover:border-white transition-all"
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => socketService.resolveIncident(incidentId)}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-sm tracking-wide shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2"
             >
+              <CheckCircle className="w-4 h-4" />
               Mark Resolved
-            </button>
+            </motion.button>
           ) : !hasJoined ? (
-            <button 
-              onClick={handleJoin}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-black text-sm tracking-widest uppercase border-[3px] border-blue-600 hover:border-white transition-all"
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => { socketService.joinAsResponder(incidentId); setHasJoined(true); setActiveChatResponderId(user.id); }}
+              className="w-full py-3.5 rounded-xl gradient-brand text-white font-bold text-sm tracking-wide shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
             >
+              <Zap className="w-4 h-4" />
               I'm Responding
-            </button>
+            </motion.button>
           ) : null}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

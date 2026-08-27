@@ -1,27 +1,41 @@
 import React from 'react';
+import { motion } from 'framer-motion';
+import { Bot } from 'lucide-react';
 
 export default function CrisisGuidanceCard({ steps, loading }) {
   return (
-    <div className="bg-slate-950 border-[3px] border-slate-700 p-4 shadow-[4px_4px_0px_0px_rgba(51,65,85,1)] mb-4 mt-4 relative">
-      <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 mb-3 absolute -top-3 left-4 bg-slate-900 px-2 border-2 border-slate-700">
-        AI First-Response Guidance
-      </h3>
-      
+    <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-4 relative overflow-hidden">
+      {/* Subtle background glow */}
+      <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+
+      <div className="flex items-center gap-2 mb-3 relative z-10">
+        <div className="w-7 h-7 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+          <Bot className="w-4 h-4 text-indigo-400" />
+        </div>
+        <h3 className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">AI First-Response Guidance</h3>
+      </div>
+
       {loading ? (
-        <div className="flex flex-col gap-3 animate-pulse mt-3">
-          <div className="h-4 bg-slate-800 rounded-none w-full"></div>
-          <div className="h-4 bg-slate-800 rounded-none w-[85%]"></div>
-          <div className="h-4 bg-slate-800 rounded-none w-[60%]"></div>
+        <div className="flex flex-col gap-3 relative z-10">
+          <div className="h-3 bg-indigo-500/10 rounded-full w-full animate-pulse" />
+          <div className="h-3 bg-indigo-500/10 rounded-full w-[85%] animate-pulse" />
+          <div className="h-3 bg-indigo-500/10 rounded-full w-[60%] animate-pulse" />
         </div>
       ) : (
-        <div className="flex flex-col gap-3 mt-3">
+        <div className="flex flex-col gap-2.5 relative z-10">
           {steps?.map((step, i) => (
-            <div key={i} className="text-sm text-slate-200 leading-relaxed flex gap-3 items-start">
-              <span className="font-mono text-blue-400 font-bold shrink-0 pt-0.5">
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="flex gap-3 items-start"
+            >
+              <span className="shrink-0 w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-300 text-xs font-bold font-mono">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <span>{step}</span>
-            </div>
+              <p className="text-sm text-slate-200 leading-relaxed pt-0.5">{step}</p>
+            </motion.div>
           ))}
         </div>
       )}

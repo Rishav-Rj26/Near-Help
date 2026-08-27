@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Star, CheckCircle, XCircle, ClipboardList } from 'lucide-react';
 import { submitDebrief, rateResponder } from '../../services/api';
 
 export default function DebriefModal({ incidentId, questions, responders, onClose }) {
@@ -7,129 +9,136 @@ export default function DebriefModal({ incidentId, questions, responders, onClos
   const [ratings, setRatings] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  const handleStarClick = (responderId, rating) => {
-    setRatings(prev => ({ ...prev, [responderId]: rating }));
-  };
-
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
       const notes = questions.map((q, i) => `Q: ${q}\nA: ${answers[i] || 'N/A'}`).join('\n\n');
       await submitDebrief(incidentId, { wasReal: wasReal === true, notes });
-
-      const ratingPromises = Object.entries(ratings).map(([rId, rating]) => 
-        rateResponder(incidentId, rId, rating)
-      );
-      await Promise.all(ratingPromises);
-
+      await Promise.all(Object.entries(ratings).map(([rId, rating]) => rateResponder(incidentId, rId, rating)));
       onClose();
     } catch (err) {
-      console.error('Failed to submit debrief:', err);
-      alert('Failed to submit debrief. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
+      console.error('Debrief failed:', err);
+      alert('Failed to submit. Please try again.');
+    } finally { setSubmitting(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
-      <div 
-        className="w-full max-w-lg bg-slate-950 border-[3px] border-white p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] relative transition-all animate-in zoom-in-95 my-8"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md overflow-y-auto"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="w-full max-w-lg glass rounded-2xl p-6 shadow-2xl my-8"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-2 border-b-2 border-slate-700 pb-4">
-          <h2 className="text-3xl font-black uppercase tracking-tighter text-white">Incident Debrief</h2>
-          <button 
-            onClick={onClose} 
-            className="text-sm font-mono font-bold text-slate-400 hover:text-white uppercase tracking-widest underline decoration-2 decoration-slate-700 hover:decoration-white transition-all"
-          >
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center glow-brand">
+              <ClipboardList className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-white">Incident Debrief</h2>
+              <p className="text-xs text-slate-400">Help improve community safety</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-sm text-slate-400 hover:text-white transition-colors underline decoration-slate-700 hover:decoration-white font-medium">
             Skip
           </button>
         </div>
-        
-        <p className="text-sm text-slate-400 font-mono mb-8">
-          Your feedback helps improve community safety and responder trust.
-        </p>
 
-        <label className="block text-sm font-black uppercase tracking-widest text-slate-300 mb-3">
-          Was this a real emergency?
-        </label>
-        <div className="flex gap-4 mb-8">
-          <button 
-            className={`flex-1 py-3 px-4 font-black uppercase tracking-widest text-sm transition-all border-[3px] ${wasReal === true ? 'bg-green-600 border-green-600 text-white shadow-[0_0_15px_rgba(22,163,74,0.4)]' : 'bg-transparent border-slate-700 text-slate-400 hover:border-slate-500'}`}
+        <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent my-5" />
+
+        {/* Was Real? */}
+        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Was this a real emergency?</label>
+        <div className="flex gap-3 mb-6">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={() => setWasReal(true)}
+            className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-300 border ${
+              wasReal === true
+                ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 border-transparent text-white shadow-lg shadow-emerald-500/25'
+                : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:bg-slate-800/60'
+            }`}
           >
-            Yes, it was real
-          </button>
-          <button 
-            className={`flex-1 py-3 px-4 font-black uppercase tracking-widest text-sm transition-all border-[3px] ${wasReal === false ? 'bg-red-600 border-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]' : 'bg-transparent border-slate-700 text-slate-400 hover:border-slate-500'}`}
+            <CheckCircle className="w-4 h-4" /> Yes, real
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={() => setWasReal(false)}
+            className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-300 border ${
+              wasReal === false
+                ? 'bg-gradient-to-r from-red-500 to-red-600 border-transparent text-white shadow-lg shadow-red-500/25'
+                : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:bg-slate-800/60'
+            }`}
           >
-            No, False Alarm
-          </button>
+            <XCircle className="w-4 h-4" /> False alarm
+          </motion.button>
         </div>
 
+        {/* Questions */}
         {questions.map((q, i) => (
-          <div key={i} className="mb-6">
-            <label className="block text-sm font-black uppercase tracking-widest text-slate-300 mb-3">{q}</label>
-            <textarea 
-              value={answers[i]} 
-              onChange={(e) => {
-                const newAnswers = [...answers];
-                newAnswers[i] = e.target.value;
-                setAnswers(newAnswers);
-              }}
+          <div key={i} className="mb-5">
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{q}</label>
+            <textarea
+              value={answers[i]}
+              onChange={(e) => { const a = [...answers]; a[i] = e.target.value; setAnswers(a); }}
               placeholder="Your answer..."
-              className="w-full min-h-[100px] p-3 border-2 border-slate-700 bg-slate-900 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full min-h-[80px] p-3 rounded-xl bg-slate-800/30 border border-slate-700/50 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/30 transition-all resize-none"
             />
           </div>
         ))}
 
-        {responders && responders.length > 0 && (
-          <div className="mb-8 border-t-2 border-slate-800 pt-6">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-300 mb-4">Rate Responders</h3>
-            <div className="flex flex-col gap-3">
+        {/* Rate Responders */}
+        {responders?.length > 0 && (
+          <>
+            <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent my-4" />
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Rate Responders</h3>
+            <div className="flex flex-col gap-2 mb-6">
               {responders.map(r => {
                 const rId = r.id || r.user?.toString() || r.user;
-                const rName = r.name || 'Responder';
                 return (
-                  <div key={rId} className="flex items-center justify-between p-3 bg-slate-900 border border-slate-800">
+                  <div key={rId} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-slate-700/30">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-sm">{rName}</span>
-                      {r.hasRelevantSkill && (
-                        <span className="px-2 py-0.5 bg-green-500/20 text-green-400 border border-green-500 text-[10px] font-black uppercase tracking-widest">
-                          Skilled
-                        </span>
-                      )}
+                      <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center text-white text-xs font-bold">
+                        {(r.name || 'R')[0].toUpperCase()}
+                      </div>
+                      <span className="text-sm font-medium text-white">{r.name || 'Responder'}</span>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-0.5">
                       {[1, 2, 3, 4, 5].map(star => (
-                        <button 
+                        <button
                           key={star}
-                          onClick={() => handleStarClick(rId, star)}
-                          className={`text-xl leading-none px-1 transition-colors hover:scale-125 ${
-                            (ratings[rId] || 0) >= star ? 'text-yellow-500' : 'text-slate-700 hover:text-slate-500'
+                          onClick={() => setRatings(prev => ({ ...prev, [rId]: star }))}
+                          className={`text-lg px-0.5 transition-all hover:scale-125 ${
+                            (ratings[rId] || 0) >= star ? 'text-amber-400' : 'text-slate-700 hover:text-slate-500'
                           }`}
-                        >
-                          ★
-                        </button>
+                        >★</button>
                       ))}
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </>
         )}
 
-        <button 
+        {/* Submit */}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={handleSubmit}
           disabled={submitting || wasReal === null}
-          className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg tracking-widest uppercase border-[3px] border-blue-600 hover:border-white shadow-[0_0_15px_rgba(37,99,235,0.5)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+          className="w-full py-3.5 rounded-xl gradient-brand text-white font-bold text-sm tracking-wide shadow-lg shadow-indigo-500/25 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center justify-center gap-2"
         >
-          {submitting ? 'Submitting...' : 'Submit Debrief'}
-        </button>
-      </div>
-    </div>
+          {submitting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Submit Debrief'}
+        </motion.button>
+      </motion.div>
+    </motion.div>
   );
 }
