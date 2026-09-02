@@ -8,7 +8,7 @@ import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import incidentRoutes from './routes/incident.routes.js';
 import adminRoutes from './routes/admin.routes.js';
-import smsRoutes from './routes/sms.routes.js';
+
 import { createRateLimiter, errorHandler, notFound, requestContext, securityHeaders } from './middleware/security.middleware.js';
 
 dotenv.config();
@@ -37,7 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/sms', smsRoutes);
+
 app.use(notFound);
 app.use(errorHandler);
 
