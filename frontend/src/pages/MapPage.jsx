@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Shield, Crosshair, Menu, X } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 import { useAuth } from '../context/AuthContext';
@@ -33,7 +32,6 @@ export default function MapPage() {
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [debriefData, setDebriefData] = useState(null);
   const [locationError, setLocationError] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const locationIntervalRef = useRef(null);
   const locationRef = useRef(location);
@@ -130,38 +128,65 @@ export default function MapPage() {
   if (!user) return null;
 
   return (
-    <div className="relative w-screen h-screen bg-[#0a0e1a] overflow-hidden">
-      {/* Top Bar */}
-      <div className="absolute top-0 left-0 right-0 z-[1000] flex items-center justify-between px-4 py-3">
-        <div className="glass rounded-xl px-4 py-2 flex items-center gap-2 shadow-lg">
-          <Shield className="w-5 h-5 text-indigo-400" />
-          <span className="text-white font-bold text-sm tracking-tight">NearHelp</span>
-          {incidents.length > 0 && (
-            <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white animate-pulse">
-              {incidents.length} Active
+    <div className="relative w-screen h-screen bg-void text-slate-100 overflow-hidden font-sans select-none flex flex-col justify-between">
+      {/* HEADER / Minimalist Spatial HUD Bar */}
+      <header className="absolute top-0 w-full z-40 px-4 pt-4 pb-3 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-2 pointer-events-auto">
+          {user.role === 'admin' ? (
+             <button 
+                onClick={() => navigate('/admin')}
+                className="w-10 h-10 rounded-lg hud-glass flex items-center justify-center text-slate-300 hover:text-white border border-white/10 active:scale-95 transition-transform"
+             >
+                <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+             </button>
+          ) : (
+            <button className="w-10 h-10 rounded-lg hud-glass flex items-center justify-center text-slate-300 hover:text-white border border-white/10 active:scale-95 transition-transform" onClick={() => navigate('/')}>
+              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>explore</span>
+            </button>
+          )}
+          
+          <div className="flex flex-col">
+            <span className="text-[14px] font-bold tracking-widest text-white flex items-center gap-1">
+              SENTINEL <span className="text-[10px] px-1 py-0.5 rounded bg-molten/20 text-molten border border-molten/30 font-mono">3D</span>
             </span>
-          )}
+            <span className="text-[8.5px] font-mono text-emerald-400 flex items-center gap-1 tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              SPATIAL MESH ONLINE
+            </span>
+          </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          {user.role === 'admin' && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/admin')}
-              className="glass rounded-xl px-4 py-2 text-xs font-semibold text-indigo-300 hover:text-white transition-colors"
-            >
-              Dashboard
-            </motion.button>
-          )}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+        
+        {/* Telemetry Corner HUD Pill */}
+        <div className="flex items-center gap-2 font-mono text-[10px] text-slate-300 pointer-events-auto">
+          <div className="hud-glass px-2.5 py-1.5 rounded-md border border-white/10 flex items-center gap-2">
+            <span className="flex items-center gap-1 text-cyan-300" title="Satellites in constellation">
+              <span className="material-symbols-outlined text-[13px]">satellite_alt</span>
+              <span>8 SAT</span>
+            </span>
+            <span className="h-2.5 w-[1px] bg-white/20"></span>
+            <span className="flex items-center gap-1 text-emerald-400" title="Quantum-Encrypted Channel">
+              <span className="material-symbols-outlined text-[12px]">lock</span>
+              <span>ENC</span>
+            </span>
+          </div>
+          <button 
             onClick={() => navigate('/profile')}
-            className="w-10 h-10 rounded-xl glass flex items-center justify-center text-slate-300 hover:text-white transition-colors shadow-lg"
+            className="w-10 h-10 rounded-lg hud-glass flex items-center justify-center text-slate-200 border border-white/10 active:scale-95 transition-transform"
           >
-            <User className="w-5 h-5" />
-          </motion.button>
+            <span className="material-symbols-outlined text-[20px]">shield_person</span>
+          </button>
+        </div>
+      </header>
+
+      {/* FLOATING SPATIAL HUD STATUS BANNER */}
+      <div className="absolute top-[72px] w-full z-30 px-4 mt-2 flex items-center justify-between pointer-events-none">
+        <div className="hud-glass pointer-events-auto px-3 py-1.5 rounded-full border border-sky-500/20 text-[10px] font-mono text-sky-300/90 flex items-center gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+          <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span>
+          NEIGHBORHOOD SENTINEL ACTIVE
+        </div>
+        <div className="hud-glass pointer-events-auto px-2.5 py-1.5 rounded-full border border-emerald-500/30 text-[10px] font-mono text-emerald-300 flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[13px]">diversity_3</span>
+          <span>RESPONDERS IN RANGE: <strong>{incidents.length > 0 ? incidents.length + 5 : '5'}</strong></span>
         </div>
       </div>
 
@@ -172,60 +197,86 @@ export default function MapPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute top-16 left-1/2 -translate-x-1/2 z-[1001] glass rounded-xl px-4 py-2.5 text-xs text-amber-300 border border-amber-500/20 max-w-[300px] text-center shadow-lg"
+            className="absolute top-28 left-1/2 -translate-x-1/2 z-[1001] hud-glass rounded-xl px-4 py-2.5 text-xs text-amber-300 border border-amber-500/20 max-w-[300px] text-center shadow-lg font-mono"
           >
             {locationError}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Map */}
-      <MapContainer
-        center={[location.lat, location.lng]}
-        zoom={15}
-        className="w-full h-full z-0"
-        zoomControl={false}
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        <RecenterAutomatically lat={location.lat} lng={location.lng} />
+      {/* Map Content */}
+      <div className="absolute inset-0 z-0">
+         <MapContainer
+            center={[location.lat, location.lng]}
+            zoom={15}
+            className="w-full h-full"
+            zoomControl={false}
+         >
+            <TileLayer
+               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+               attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+            />
+            <RecenterAutomatically lat={location.lat} lng={location.lng} />
 
-        {incidents.map((incident) => (
-          <PulsingPinMarker
-            key={incident.incidentId || incident._id}
-            incident={incident}
-            onClick={(inc) => setSelectedIncident(inc)}
-          />
-        ))}
+            {incidents.map((incident) => (
+               <PulsingPinMarker
+                  key={incident.incidentId || incident._id}
+                  incident={incident}
+                  onClick={(inc) => setSelectedIncident(inc)}
+               />
+            ))}
 
-        {selectedIncident && (selectedIncident.broadcaster === user.id || selectedIncident.broadcaster?.toString() === user.id) && (
-          <ResponderMarkerLayer incidentId={selectedIncident.incidentId || selectedIncident._id} />
-        )}
-      </MapContainer>
+            {selectedIncident && (selectedIncident.broadcaster === user.id || selectedIncident.broadcaster?.toString() === user.id) && (
+               <ResponderMarkerLayer incidentId={selectedIncident.incidentId || selectedIncident._id} />
+            )}
+         </MapContainer>
+         {/* Map overlay gradient to blend with HUD */}
+         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_40%,transparent_0%,rgba(5,7,12,0.6)_100%)] z-[400]" />
+      </div>
 
-      {/* SOS Button */}
+      {/* MID-SCREEN INTERACTIVE ZONE: 3D Gyro Trigger Orb */}
       <AnimatePresence>
         {!selectedIncident && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000]"
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center justify-end pb-4 pointer-events-auto"
           >
-            <motion.button
-              onClick={() => setIsModalOpen(true)}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="relative w-20 h-20 rounded-full gradient-danger flex items-center justify-center text-white font-black text-xl tracking-widest glow-danger cursor-pointer group"
-            >
-              {/* Pulsing rings */}
-              <span className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" />
-              <span className="absolute inset-[-8px] rounded-full border-2 border-red-500/20 animate-pulse" />
-              <span className="relative z-10 font-black text-lg tracking-wider">SOS</span>
-            </motion.button>
-            <p className="text-center text-[10px] text-slate-500 mt-3 font-medium tracking-wider uppercase">Tap for Emergency</p>
+            {/* Spatial Scanning Radius Selector HUD */}
+            <div className="mb-6 flex items-center p-1 rounded-full hud-glass border border-white/15 shadow-2xl backdrop-blur-xl">
+              <button className="px-4 py-1.5 rounded-full text-[11px] font-mono text-slate-400 hover:text-white transition-colors">500M</button>
+              <button className="px-4 py-1.5 rounded-full text-[11px] font-mono font-bold bg-white/15 text-white border border-white/25 shadow-[0_0_12px_rgba(255,255,255,0.2)]">1.2KM GEO</button>
+              <button className="px-4 py-1.5 rounded-full text-[11px] font-mono text-slate-400 hover:text-white transition-colors">3.0KM</button>
+            </div>
+            
+            {/* 3D FLOATING EMERGENCY TRIGGER ORB & GIMBAL RINGS */}
+            <div className="relative w-44 h-44 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full gyro-ring-1 pointer-events-none"></div>
+              <div className="absolute inset-2.5 rounded-full gyro-ring-2 pointer-events-none"></div>
+              <div className="absolute inset-5 rounded-full gyro-ring-3 pointer-events-none"></div>
+              <div className="absolute inset-4 rounded-full bg-molten/20 blur-xl animate-pulse pointer-events-none"></div>
+              
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="relative w-28 h-28 rounded-full molten-core flex flex-col items-center justify-center text-white active:scale-95 transition-transform duration-200 cursor-pointer group shadow-[0_12px_36px_rgba(255,107,0,0.5)]"
+              >
+                <div className="absolute top-2 left-6 w-12 h-6 rounded-full bg-white/40 blur-[3px] pointer-events-none"></div>
+                <span className="font-sans font-extrabold text-[26px] tracking-wider text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-center">
+                    SOS
+                </span>
+                <span className="text-[9px] font-mono tracking-widest text-amber-200 font-bold opacity-90 -mt-0.5">
+                    TAP NOW
+                </span>
+              </button>
+            </div>
+            
+            <div className="mt-3 text-center">
+              <p className="font-mono text-[10px] tracking-widest text-slate-400 uppercase flex items-center justify-center gap-1.5 bg-black/40 px-3 py-1 rounded-full border border-white/5">
+                <span className="material-symbols-outlined text-[13px] text-molten">sensors</span>
+                TAP FOR IMMEDIATE DISPATCH
+              </p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

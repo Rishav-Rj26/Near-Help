@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import { BarChart3, Shield, Users, Clock, AlertTriangle, ArrowLeft, Ban, CheckCircle, Star, Activity } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 import { useAuth } from '../context/AuthContext';
@@ -51,47 +50,48 @@ export default function AdminDashboardPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+    <div className="min-h-screen bg-void flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
     </div>
   );
 
   const statCards = [
-    { label: 'Active SOS', value: analytics.activeCount, icon: Activity, color: 'from-red-500 to-orange-500', glow: 'shadow-red-500/20' },
-    { label: 'Avg Response', value: `${analytics.avgResponseTimeSec}s`, icon: Clock, color: 'from-blue-500 to-indigo-500', glow: 'shadow-blue-500/20' },
-    { label: 'Flagged Users', value: analytics.flaggedUserCount, icon: AlertTriangle, color: 'from-amber-500 to-orange-500', glow: 'shadow-amber-500/20' },
+    { label: 'Active SOS', value: analytics.activeCount, icon: 'sensors', color: 'text-rescue-red', glow: 'shadow-[0_0_20px_rgba(239,68,68,0.15)]', bg: 'bg-red-500/10', border: 'border-red-500/20' },
+    { label: 'Avg Response', value: `${analytics.avgResponseTimeSec}s`, icon: 'timer', color: 'text-sky-400', glow: 'shadow-[0_0_20px_rgba(56,189,248,0.15)]', bg: 'bg-sky-500/10', border: 'border-sky-500/20' },
+    { label: 'Flagged Users', value: analytics.flaggedUserCount, icon: 'warning', color: 'text-hazard-amber', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.15)]', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] relative">
+    <div className="min-h-screen bg-void text-on-background relative font-sans antialiased">
       {/* Background mesh */}
-      <div className="fixed inset-0 gradient-mesh pointer-events-none" />
+      <div className="fixed inset-0 grid-tactical pointer-events-none opacity-50" />
+      <div className="fixed inset-0 ambient-cyber-bg pointer-events-none opacity-50" />
 
       <div className="relative z-10 flex min-h-screen">
         {/* Sidebar */}
-        <nav className="w-64 glass border-r border-slate-700/30 flex flex-col p-6 shrink-0 sticky top-0 h-screen">
+        <nav className="w-64 glass-tactical border-r border-white/10 flex flex-col p-6 shrink-0 sticky top-0 h-screen">
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center glow-brand">
-              <Shield className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(181,200,227,0.3)]">
+              <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>admin_panel_settings</span>
             </div>
             <div>
-              <h1 className="text-lg font-extrabold text-white tracking-tight">NearHelp</h1>
-              <p className="text-[10px] text-slate-400 uppercase tracking-widest">Admin Panel</p>
+              <h1 className="text-lg font-extrabold text-white tracking-tight">NEARHELP</h1>
+              <p className="text-[10px] font-mono text-primary uppercase tracking-widest">Admin Panel</p>
             </div>
           </div>
 
           <div className="flex flex-col gap-1 flex-1">
             {[
-              { label: 'Overview', href: '#overview', icon: BarChart3 },
-              { label: 'Live Map', href: '#live-map', icon: Activity },
-              { label: 'Flagged Users', href: '#flagged', icon: Users },
+              { label: 'Overview', href: '#overview', icon: 'bar_chart' },
+              { label: 'Live Map', href: '#live-map', icon: 'map' },
+              { label: 'Flagged Users', href: '#flagged', icon: 'group' },
             ].map(item => (
               <a
                 key={item.label}
                 href={item.href}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all"
               >
-                <item.icon className="w-4 h-4" />
+                <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
                 {item.label}
               </a>
             ))}
@@ -101,9 +101,9 @@ export default function AdminDashboardPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/map')}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-indigo-300 hover:text-white hover:bg-indigo-500/10 transition-all"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-sky-400 hover:text-white hover:bg-sky-500/10 transition-all border border-sky-500/20"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
             Back to App
           </motion.button>
         </nav>
@@ -112,7 +112,7 @@ export default function AdminDashboardPage() {
         <main className="flex-1 p-6 md:p-10 overflow-y-auto flex flex-col gap-8">
           <header>
             <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Dashboard</h2>
-            <p className="text-sm text-slate-400 mt-1">Real-time emergency overview</p>
+            <p className="text-sm font-mono text-primary mt-1 uppercase tracking-widest">Real-time Emergency Overview</p>
           </header>
 
           {/* Stats */}
@@ -123,13 +123,12 @@ export default function AdminDashboardPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className={`glass rounded-2xl p-6 relative overflow-hidden shadow-lg ${card.glow}`}
+                className={`glass-tactical rounded-2xl p-6 relative overflow-hidden ${card.glow}`}
               >
-                <div className={`absolute top-0 right-0 w-24 h-24 rounded-full opacity-20 blur-2xl bg-gradient-to-br ${card.color}`} />
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-4 shadow-lg`}>
-                  <card.icon className="w-5 h-5 text-white" />
+                <div className={`w-10 h-10 rounded-xl ${card.bg} border ${card.border} flex items-center justify-center mb-4`}>
+                  <span className={`material-symbols-outlined ${card.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{card.icon}</span>
                 </div>
-                <div className="text-4xl font-black text-white relative z-10">{card.value}</div>
+                <div className="text-4xl font-mono font-black text-white relative z-10">{card.value}</div>
                 <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">{card.label}</div>
               </motion.div>
             ))}
@@ -137,11 +136,11 @@ export default function AdminDashboardPage() {
 
           {/* Live Map */}
           <section id="live-map">
-            <h3 className="text-xl font-bold text-white mb-4">Live Incidents</h3>
-            <div className="h-[400px] rounded-2xl overflow-hidden border border-slate-700/30 glass">
+            <h3 className="text-xl font-bold text-white mb-4 tracking-tight">Live Incidents</h3>
+            <div className="h-[400px] rounded-2xl overflow-hidden glass-tactical">
               <MapContainer center={[28.6139, 77.2090]} zoom={11} className="h-full w-full">
                 <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  attribution='&copy; <a href="https://carto.com/">CARTO</a>'
                   url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
                 {activeIncidents.map(inc => (
@@ -153,60 +152,62 @@ export default function AdminDashboardPage() {
 
           {/* Flagged Users */}
           <section id="flagged">
-            <h3 className="text-xl font-bold text-white mb-4">Flagged Users</h3>
-            <div className="glass rounded-2xl overflow-hidden border border-slate-700/30">
+            <h3 className="text-xl font-bold text-white mb-4 tracking-tight">Flagged Users</h3>
+            <div className="glass-tactical rounded-2xl overflow-hidden">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-slate-700/30">
+                  <tr className="border-b border-white/10 bg-white/5">
                     {['Name', 'Email', 'False Alerts', 'Rating', 'Status', 'Action'].map(h => (
-                      <th key={h} className="px-5 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-widest">{h}</th>
+                      <th key={h} className="px-5 py-4 text-[10px] font-mono font-semibold text-primary uppercase tracking-widest">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {flaggedUsers.map(u => (
-                    <tr key={u._id} className="border-b border-slate-800/30 hover:bg-white/[0.02] transition-colors">
+                    <tr key={u._id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                       <td className="px-5 py-4 font-semibold text-white text-sm">{u.name}</td>
                       <td className="px-5 py-4 text-slate-400 text-sm">{u.email}</td>
                       <td className="px-5 py-4">
-                        <span className={`text-sm font-bold ${u.trust?.falseAlertCount > 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                        <span className={`font-mono text-sm font-bold ${u.trust?.falseAlertCount > 0 ? 'text-rescue-red' : 'text-slate-400'}`}>
                           {u.trust?.falseAlertCount || 0}
                         </span>
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-1">
-                          <Star className="w-3.5 h-3.5 text-amber-400" />
-                          <span className="text-sm font-bold text-white">{u.trust?.avgRating ? u.trust.avgRating.toFixed(1) : '0.0'}</span>
+                          <span className="material-symbols-outlined text-[16px] text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                          <span className="font-mono text-sm font-bold text-white">{u.trust?.avgRating ? u.trust.avgRating.toFixed(1) : '0.0'}</span>
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border ${
                           u.trust?.isSuspended
-                            ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                            ? 'bg-red-500/10 text-rescue-red border-red-500/20'
                             : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                         }`}>
-                          {u.trust?.isSuspended ? <Ban className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}
-                          {u.trust?.isSuspended ? 'Suspended' : 'Active'}
+                          <span className="material-symbols-outlined text-[14px]">
+                            {u.trust?.isSuspended ? 'block' : 'check_circle'}
+                          </span>
+                          {u.trust?.isSuspended ? 'SUSPENDED' : 'ACTIVE'}
                         </span>
                       </td>
                       <td className="px-5 py-4">
                         <motion.button
                           whileTap={{ scale: 0.95 }}
                           onClick={() => handleToggle(u._id, u.trust?.isSuspended)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-mono font-bold transition-all border ${
                             u.trust?.isSuspended
                               ? 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-white'
-                              : 'border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white'
+                              : 'border-red-500/30 text-rescue-red hover:bg-red-500 hover:text-white'
                           }`}
                         >
-                          {u.trust?.isSuspended ? 'Unsuspend' : 'Suspend'}
+                          {u.trust?.isSuspended ? 'UNSUSPEND' : 'SUSPEND'}
                         </motion.button>
                       </td>
                     </tr>
                   ))}
                   {flaggedUsers.length === 0 && (
                     <tr>
-                      <td colSpan="6" className="px-5 py-10 text-center text-slate-500 text-sm">No flagged users found</td>
+                      <td colSpan="6" className="px-5 py-10 text-center text-slate-500 text-sm font-mono">NO FLAGGED USERS FOUND</td>
                     </tr>
                   )}
                 </tbody>
