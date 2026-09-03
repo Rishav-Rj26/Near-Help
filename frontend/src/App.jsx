@@ -6,13 +6,16 @@ import MapPage from './pages/MapPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 
+import LandingPage from './pages/LandingPage';
+
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/map" element={<MapPage />} />
           <Route path="/auth" element={<AuthPage />} />
-          <Route path="/" element={<MapPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
