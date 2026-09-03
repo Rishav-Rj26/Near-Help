@@ -234,49 +234,122 @@ export default function MapPage() {
          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_40%,transparent_0%,rgba(5,7,12,0.6)_100%)] z-[400]" />
       </div>
 
-      {/* MID-SCREEN INTERACTIVE ZONE: 3D Gyro Trigger Orb */}
+      {/* MID-SCREEN INTERACTIVE ZONE: 3D Gyro Trigger Orb & Bottom Sheet */}
       <AnimatePresence>
         {!selectedIncident && (
           <motion.div
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center justify-end pb-4 pointer-events-auto"
+            className="absolute bottom-0 left-0 right-0 z-30 flex flex-col items-center pointer-events-auto"
           >
             {/* Spatial Scanning Radius Selector HUD */}
-            <div className="mb-6 flex items-center p-1 rounded-full hud-glass border border-white/15 shadow-2xl backdrop-blur-xl">
-              <button className="px-4 py-1.5 rounded-full text-[11px] font-mono text-slate-400 hover:text-white transition-colors">500M</button>
-              <button className="px-4 py-1.5 rounded-full text-[11px] font-mono font-bold bg-white/15 text-white border border-white/25 shadow-[0_0_12px_rgba(255,255,255,0.2)]">1.2KM GEO</button>
-              <button className="px-4 py-1.5 rounded-full text-[11px] font-mono text-slate-400 hover:text-white transition-colors">3.0KM</button>
+            <div className="mb-4 flex items-center p-1 rounded-full hud-glass border border-white/15 shadow-2xl backdrop-blur-xl">
+              <button className="px-4 py-1 rounded-full text-[11px] font-mono text-slate-400 hover:text-white transition-colors">500M</button>
+              <button className="px-4 py-1 rounded-full text-[11px] font-mono font-bold bg-white/15 text-white border border-white/25 shadow-[0_0_12px_rgba(255,255,255,0.2)]">1.2KM GEO</button>
+              <button className="px-4 py-1 rounded-full text-[11px] font-mono text-slate-400 hover:text-white transition-colors">3.0KM</button>
+              <button className="px-3 py-1 rounded-full text-[11px] font-mono text-cyan-400 flex items-center gap-0.5 hover:bg-cyan-500/10">
+                <span className="material-symbols-outlined text-[13px]">radar</span>
+                WIDE
+              </button>
             </div>
             
             {/* 3D FLOATING EMERGENCY TRIGGER ORB & GIMBAL RINGS */}
             <div className="relative w-44 h-44 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full gyro-ring-1 pointer-events-none"></div>
-              <div className="absolute inset-2.5 rounded-full gyro-ring-2 pointer-events-none"></div>
-              <div className="absolute inset-5 rounded-full gyro-ring-3 pointer-events-none"></div>
-              <div className="absolute inset-4 rounded-full bg-molten/20 blur-xl animate-pulse pointer-events-none"></div>
+              <div className="absolute inset-0 rounded-full gyro-ring-1 pointer-events-none" />
+              <div className="absolute inset-2.5 rounded-full gyro-ring-2 pointer-events-none" />
+              <div className="absolute inset-5 rounded-full gyro-ring-3 pointer-events-none" />
+              <div className="absolute inset-4 rounded-full bg-molten/20 blur-xl animate-pulse pointer-events-none" />
               
               <button 
                 onClick={() => setIsModalOpen(true)}
                 className="relative w-28 h-28 rounded-full molten-core flex flex-col items-center justify-center text-white active:scale-95 transition-transform duration-200 cursor-pointer group shadow-[0_12px_36px_rgba(255,107,0,0.5)]"
               >
-                <div className="absolute top-2 left-6 w-12 h-6 rounded-full bg-white/40 blur-[3px] pointer-events-none"></div>
+                <div className="absolute top-2 left-6 w-12 h-6 rounded-full bg-white/40 blur-[3px] pointer-events-none" />
                 <span className="font-sans font-extrabold text-[26px] tracking-wider text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-center">
                     SOS
                 </span>
                 <span className="text-[9px] font-mono tracking-widest text-amber-200 font-bold opacity-90 -mt-0.5">
-                    TAP NOW
+                    HOLD 1.5S
                 </span>
               </button>
             </div>
             
-            <div className="mt-3 text-center">
-              <p className="font-mono text-[10px] tracking-widest text-slate-400 uppercase flex items-center justify-center gap-1.5 bg-black/40 px-3 py-1 rounded-full border border-white/5">
+            <div className="mt-2 text-center">
+              <p className="font-mono text-[10px] tracking-widest text-slate-400 uppercase flex items-center justify-center gap-1.5">
                 <span className="material-symbols-outlined text-[13px] text-molten">sensors</span>
-                TAP FOR IMMEDIATE DISPATCH
+                TAP OR DRAG FOR IMMEDIATE DISPATCH
               </p>
             </div>
+
+            {/* BOTTOM SHEET: Spatial Dispatch Console & Emergency Selector */}
+            <section className="w-full hud-glass rounded-t-2xl border-t border-white/20 pt-2 pb-5 px-4 shadow-[0_-15px_40px_rgba(0,0,0,0.85)] flex flex-col gap-3 mt-3">
+              {/* Mechanical Grab Handle */}
+              <div className="flex flex-col items-center justify-center w-full pt-1">
+                <div className="w-10 h-1 rounded-full bg-white/25" />
+              </div>
+              {/* Header */}
+              <div className="flex items-center justify-between px-1">
+                <span className="font-mono text-[11px] font-bold text-slate-300 tracking-wider flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] text-cyan-400">near_me</span>
+                  EMERGENCY CATEGORIES
+                </span>
+                <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded">
+                  LATENCY 24ms
+                </span>
+              </div>
+              {/* 3D Beveled Emergency Category Tags */}
+              <div className="grid grid-cols-3 gap-2.5">
+                {/* Medical */}
+                <button className="hud-glass-interactive px-3 py-2.5 rounded-xl border border-cyan-500/30 hover:border-cyan-400 flex flex-col items-start gap-1 relative overflow-hidden group">
+                  <div className="absolute -right-2 -bottom-2 w-10 h-10 bg-cyan-500/10 rounded-full blur-sm" />
+                  <div className="flex items-center justify-between w-full">
+                    <span className="material-symbols-outlined text-[18px] text-cyan-300 group-hover:scale-110 transition-transform">medical_services</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  </div>
+                  <div className="text-left mt-0.5">
+                    <span className="block font-bold text-[12px] tracking-wide text-white">MEDICAL</span>
+                    <span className="block font-mono text-[8.5px] text-slate-400">3 UNITS READY</span>
+                  </div>
+                </button>
+                {/* Fire */}
+                <button className="hud-glass-interactive px-3 py-2.5 rounded-xl border border-red-500/30 hover:border-red-400 flex flex-col items-start gap-1 relative overflow-hidden group">
+                  <div className="absolute -right-2 -bottom-2 w-10 h-10 bg-red-500/15 rounded-full blur-sm" />
+                  <div className="flex items-center justify-between w-full">
+                    <span className="material-symbols-outlined text-[18px] text-red-400 group-hover:scale-110 transition-transform">local_fire_department</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  </div>
+                  <div className="text-left mt-0.5">
+                    <span className="block font-bold text-[12px] tracking-wide text-white">FIRE</span>
+                    <span className="block font-mono text-[8.5px] text-slate-400">1 UNIT READY</span>
+                  </div>
+                </button>
+                {/* Gas Leak */}
+                <button className="hud-glass-interactive px-3 py-2.5 rounded-xl border border-amber-500/30 hover:border-amber-400 flex flex-col items-start gap-1 relative overflow-hidden group">
+                  <div className="absolute -right-2 -bottom-2 w-10 h-10 bg-amber-500/10 rounded-full blur-sm" />
+                  <div className="flex items-center justify-between w-full">
+                    <span className="material-symbols-outlined text-[18px] text-amber-400 group-hover:scale-110 transition-transform">warning</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  </div>
+                  <div className="text-left mt-0.5">
+                    <span className="block font-bold text-[12px] tracking-wide text-white">GAS LEAK</span>
+                    <span className="block font-mono text-[8.5px] text-slate-400">HAZMAT ALERT</span>
+                  </div>
+                </button>
+              </div>
+              {/* Slide-to-Confirm Spatial Emergency Rail */}
+              <div className="relative w-full h-12 rounded-xl bg-slate-950/80 border border-white/15 p-1 flex items-center justify-between overflow-hidden shadow-inner">
+                <div className="absolute inset-0 bg-gradient-to-r from-molten/20 via-transparent to-transparent pointer-events-none" />
+                <div className="relative z-10 h-10 px-3.5 rounded-lg bg-gradient-to-r from-molten to-molten-glow flex items-center gap-1.5 shadow-[0_0_16px_rgba(255,107,0,0.6)] cursor-grab active:cursor-grabbing border border-amber-200/40">
+                  <span className="material-symbols-outlined text-[18px] text-white animate-pulse">double_arrow</span>
+                  <span className="font-mono text-[10px] font-bold text-white tracking-widest uppercase">DISPATCH</span>
+                </div>
+                <span className="pr-4 font-mono text-[10.5px] text-slate-400/90 tracking-wider flex items-center gap-1">
+                  <span>SLIDE FOR RAPID ASSIST</span>
+                  <span className="material-symbols-outlined text-[14px] text-slate-500">chevron_right</span>
+                </span>
+              </div>
+            </section>
           </motion.div>
         )}
       </AnimatePresence>

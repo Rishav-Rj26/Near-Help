@@ -267,6 +267,11 @@ export default function ProfilePage() {
                   </button>
               ))}
             </div>
+            <div className="flex justify-between text-[10px] text-slate-500 px-1">
+              <span>Immediate Block</span>
+              <span>Optimal Urban</span>
+              <span>Extended District</span>
+            </div>
           </div>
         </section>
       </main>

@@ -25,7 +25,7 @@ function FadeIn({ children, delay = 0, className = "" }) {
 /*  Navbar                                                             */
 /* ------------------------------------------------------------------ */
 
-function Navbar({ onGetStarted, isLoggedIn }) {
+function Navbar({ onSignIn, onSignUp, isLoggedIn, onGetStarted }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -35,243 +35,378 @@ function Navbar({ onGetStarted, isLoggedIn }) {
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass-tactical border-b border-white/10 shadow-xl' : 'bg-transparent'}`}>
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <span className="material-symbols-outlined text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>explore</span>
-          <span className="text-primary font-extrabold text-xl tracking-tighter">NEARHELP</span>
-          <div className="hidden sm:flex ml-2 items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-            MESH LIVE
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#0a0d14]/75 backdrop-blur-xl border-b border-primary/10 shadow-lg' : 'bg-transparent'}`}>
+      <div className="flex justify-between items-center px-6 md:px-8 py-4 max-w-7xl mx-auto">
+        <div className="flex items-center gap-8">
+          <a href="#" onClick={(e) => { e.preventDefault(); }} className="flex items-center gap-2 text-2xl font-bold text-on-surface tracking-tight hover:text-primary transition-colors">
+            <div className="w-7 h-7 rounded-md bg-gradient-to-tr from-amber-500 via-sky-400 to-indigo-500 flex items-center justify-center p-[1px]">
+              <div className="w-full h-full bg-[#0a0d14] rounded-[5px] flex items-center justify-center">
+                <span className="material-symbols-outlined text-amber-400 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>emergency</span>
+              </div>
+            </div>
+            <span>NearHelp</span>
+          </a>
+          <div className="hidden md:flex gap-6 text-sm items-center">
+            <a href="#how-it-works" className="text-primary font-semibold border-b-2 border-primary pb-1 hover:bg-white/5 transition-colors px-2 rounded-t">How it works</a>
+            <a href="#features" className="text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors px-2 py-1 rounded">Features</a>
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>MESH LIVE</span>
+            </div>
           </div>
         </div>
-
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
-          <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-          <a href="#security" className="hover:text-white transition-colors">Security</a>
+        <div className="flex items-center gap-4">
+          {isLoggedIn ? (
+            <button onClick={onGetStarted} className="glossy-btn glossy-btn-amber px-4 py-2 rounded-lg text-sm font-bold transition-transform active:scale-95 flex items-center gap-1">
+              Open HUD
+            </button>
+          ) : (
+            <>
+              <button onClick={onSignIn} className="glossy-btn glossy-btn-ghost px-4 py-2 rounded-lg text-sm text-on-surface hover:text-white transition-colors">
+                Sign in
+              </button>
+              <button onClick={onSignUp} className="glossy-btn glossy-btn-amber px-4 py-2 rounded-lg text-sm font-bold transition-transform active:scale-95 flex items-center gap-1">
+                Sign up
+              </button>
+            </>
+          )}
         </div>
-
-        <button
-          onClick={onGetStarted}
-          className="glossy-btn glossy-btn-amber px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 active:scale-95"
-        >
-          {isLoggedIn ? 'OPEN HUD' : 'JOIN NETWORK'}
-          <span className="material-symbols-outlined text-[18px]">login</span>
-        </button>
       </div>
     </nav>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Hero Section                                                       */
+/*  Hero Section with Orbital Wireframe Orb & Floating HUD Chips      */
 /* ------------------------------------------------------------------ */
 
 function HeroSection({ onGetStarted, isLoggedIn }) {
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 ambient-cyber-bg" />
-      <div className="absolute inset-0 grid-tactical opacity-30" />
-      
-      {/* 3D Wireframe Globe/Orb effect */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] pointer-events-none opacity-20">
-         <div className="absolute inset-0 border-[2px] border-primary/30 rounded-full radar-sweeper" />
-         <div className="absolute inset-10 border-[1px] border-primary/20 rounded-full" />
-         <div className="absolute inset-20 border-[1px] border-primary/10 rounded-full" />
-      </div>
+    <section className="relative pt-8 md:pt-16 pb-12 flex flex-col items-center text-center">
+      {/* Status Tag */}
+      <FadeIn delay={100}>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary-container/70 border border-primary/30 backdrop-blur-md mb-6 shadow-[0_0_20px_rgba(56,189,248,0.2)]">
+          <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
+          <span className="font-mono text-xs tracking-wider uppercase text-sky-200 font-semibold">LIVE RESPONSE NETWORK · DECENTRALIZED</span>
+        </div>
+      </FadeIn>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 flex flex-col lg:flex-row items-center gap-12">
-        <div className="flex-1 text-left">
-          <FadeIn delay={100}>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-sky-400/30 bg-sky-500/10 mb-6">
-              <span className="material-symbols-outlined text-[14px] text-sky-400">satellite_alt</span>
-              <span className="text-[11px] font-mono font-bold text-sky-300 tracking-widest uppercase">Decentralized Crisis Network</span>
-            </div>
-          </FadeIn>
+      <FadeIn delay={200}>
+        <h1 className="text-4xl md:text-5xl lg:text-display-lg max-w-4xl text-white font-extrabold tracking-tight mb-4 drop-shadow-sm leading-[1.1]">
+          The fastest help is the neighbor you've never met.
+        </h1>
+      </FadeIn>
 
-          <FadeIn delay={200}>
-            <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white leading-[1.1] tracking-tight mb-6">
-              When Seconds Count,<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400">
-                The Community Answers.
-              </span>
-            </h1>
-          </FadeIn>
+      <FadeIn delay={350}>
+        <p className="text-lg text-on-surface-variant max-w-2xl mb-8 leading-relaxed">
+          NearHelp activates qualified responders in your immediate community within seconds, establishing zero-latency mutual aid before official services arrive.
+        </p>
+      </FadeIn>
 
-          <FadeIn delay={350}>
-            <p className="text-lg text-slate-400 max-w-xl mb-10 leading-relaxed font-medium">
-              A tactical, real-time emergency mesh that bridges the gap between crisis onset and official response. Hyperlocal. Encrypted. Immediate.
-            </p>
-          </FadeIn>
+      {/* CTA Actions */}
+      <FadeIn delay={500}>
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto z-20 mb-12">
+          <button onClick={onGetStarted} className="glossy-btn glossy-btn-amber px-8 py-3.5 rounded-xl text-lg font-bold flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(245,158,11,0.4)]">
+            {isLoggedIn ? 'Open HUD' : 'Get started'}
+            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+          </button>
+          <a href="#how-it-works" className="glossy-btn glossy-btn-ghost px-8 py-3.5 rounded-xl text-lg flex items-center justify-center gap-2 text-on-surface hover:border-primary/40">
+            <span className="material-symbols-outlined text-primary text-base">radar</span>
+            See how it works
+          </a>
+        </div>
+      </FadeIn>
 
-          <FadeIn delay={500}>
-            <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
-              <button
-                onClick={onGetStarted}
-                className="glossy-btn glossy-btn-amber px-8 py-4 rounded-xl text-[16px] font-bold flex items-center justify-center gap-2 w-full sm:w-auto active:scale-95"
-              >
-                <span>{isLoggedIn ? 'ACTIVATE HUD' : 'BECOME A RESPONDER'}</span>
-                <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-              </button>
-              <a
-                href="#how-it-works"
-                className="glossy-btn glossy-btn-ghost px-8 py-4 rounded-xl text-[16px] font-bold flex items-center justify-center gap-2 w-full sm:w-auto active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[20px]">play_circle</span>
-                <span>HOW IT WORKS</span>
-              </a>
-            </div>
-          </FadeIn>
+      {/* Tactical Wireframe Planetary Orb Canvas */}
+      <div className="relative w-full max-w-4xl h-[340px] md:h-[440px] flex items-center justify-center pointer-events-none select-none">
+        {/* Ambient Core Glow */}
+        <div className="absolute w-72 h-72 md:w-96 md:h-96 rounded-full bg-gradient-to-tr from-sky-600/30 via-indigo-600/25 to-amber-500/20 blur-3xl -z-10" />
+
+        {/* Vector Sphere Wireframe & Orbital Rings */}
+        <div className="relative w-72 h-72 md:w-96 md:h-96 mesh-orb-glow flex items-center justify-center">
+          <svg className="w-full h-full drop-shadow-[0_0_25px_rgba(56,189,248,0.4)]" fill="none" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            {/* Outer Ring */}
+            <circle cx="200" cy="200" r="180" stroke="rgba(181, 200, 227, 0.22)" strokeDasharray="4 4" strokeWidth="1.2" />
+            <circle cx="200" cy="200" r="160" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="1.5" />
+            {/* Latitudes & Longitudes Wireframe Mesh */}
+            <ellipse cx="200" cy="200" rx="160" ry="110" stroke="rgba(125, 211, 252, 0.45)" strokeWidth="1.2" />
+            <ellipse cx="200" cy="200" rx="160" ry="55" stroke="rgba(186, 230, 253, 0.35)" strokeWidth="1" />
+            <ellipse cx="200" cy="200" rx="160" ry="15" stroke="rgba(245, 158, 11, 0.6)" strokeDasharray="3 3" strokeWidth="1.2" />
+            <ellipse cx="200" cy="200" rx="110" ry="160" stroke="rgba(96, 165, 250, 0.4)" strokeWidth="1.2" />
+            <ellipse cx="200" cy="200" rx="55" ry="160" stroke="rgba(147, 197, 253, 0.3)" strokeWidth="1" />
+            {/* Orbital tilted ellipses representing signal arcs */}
+            <ellipse cx="200" cy="200" rx="175" ry="70" stroke="rgba(56, 189, 248, 0.65)" strokeWidth="1.5" transform="rotate(-32 200 200)" />
+            <ellipse cx="200" cy="200" rx="185" ry="85" stroke="rgba(245, 158, 11, 0.5)" strokeDasharray="6 4" strokeWidth="1.2" transform="rotate(28 200 200)" />
+            {/* Central Glowing Signal Core */}
+            <circle cx="200" cy="200" fill="url(#coreGlow)" r="28" />
+            <circle cx="200" cy="200" fill="#ffffff" r="8" />
+            <circle cx="200" cy="200" opacity="0.8" r="14" stroke="#38bdf8" strokeWidth="2" fill="none" />
+            {/* Connection Signal Nodes */}
+            <circle cx="95" cy="140" fill="#38bdf8" r="4.5" />
+            <circle cx="95" cy="140" opacity="0.6" r="9" stroke="#38bdf8" strokeWidth="1" fill="none" />
+            <circle cx="295" cy="175" fill="#f59e0b" r="5" />
+            <circle cx="295" cy="175" opacity="0.6" r="10" stroke="#f59e0b" strokeWidth="1" fill="none" />
+            <circle cx="230" cy="90" fill="#60a5fa" r="4" />
+            <circle cx="160" cy="300" fill="#38bdf8" r="4.5" />
+            <circle cx="310" cy="270" fill="#a78bfa" r="3.5" />
+            {/* Intersecting telemetry lines */}
+            <line stroke="rgba(56, 189, 248, 0.45)" strokeDasharray="2 2" strokeWidth="1" x1="95" x2="200" y1="140" y2="200" />
+            <line stroke="rgba(245, 158, 11, 0.5)" strokeWidth="1" x1="295" x2="200" y1="175" y2="200" />
+            <line stroke="rgba(96, 165, 250, 0.4)" strokeDasharray="4 2" strokeWidth="1" x1="230" x2="200" y1="90" y2="200" />
+            <defs>
+              <radialGradient cx="0" cy="0" gradientTransform="translate(200 200) rotate(90) scale(32)" gradientUnits="userSpaceOnUse" id="coreGlow" r="1">
+                <stop stopColor="#38bdf8" stopOpacity="0.9" />
+                <stop offset="0.6" stopColor="#2563eb" stopOpacity="0.4" />
+                <stop offset="1" stopColor="#0e131d" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+          </svg>
         </div>
 
-        <div className="flex-1 relative hidden lg:block h-[500px] w-full">
-            {/* Floating Glass HUD Metrics */}
-            <FadeIn delay={700} className="absolute top-[10%] right-[10%] z-20 marker-float">
-                <div className="glass-hud-chip px-4 py-3 rounded-xl flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[24px] text-emerald-400">timer</span>
-                    <div>
-                        <div className="text-[20px] font-mono font-black text-white leading-none">&lt;3m</div>
-                        <div className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Avg Response</div>
-                    </div>
-                </div>
-            </FadeIn>
-            <FadeIn delay={900} className="absolute top-[45%] left-[0%] z-20 marker-float" style={{animationDelay: '1s'}}>
-                <div className="glass-hud-chip px-4 py-3 rounded-xl flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[24px] text-amber-400">verified_user</span>
-                    <div>
-                        <div className="text-[20px] font-mono font-black text-white leading-none">12.4k</div>
-                        <div className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Verified Citizens</div>
-                    </div>
-                </div>
-            </FadeIn>
-            <FadeIn delay={1100} className="absolute bottom-[20%] right-[20%] z-20 marker-float" style={{animationDelay: '2s'}}>
-                <div className="glass-hud-chip px-4 py-3 rounded-xl flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[24px] text-sky-400">lock</span>
-                    <div>
-                        <div className="text-[20px] font-mono font-black text-white leading-none">E2E</div>
-                        <div className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Encrypted Dispatch</div>
-                    </div>
-                </div>
-            </FadeIn>
-            
-            {/* Center Molten Orb */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mesh-orb-glow">
-                <div className="w-32 h-32 rounded-full molten-core flex items-center justify-center opacity-80">
-                    <span className="material-symbols-outlined text-white text-[48px]">sensors</span>
-                </div>
+        {/* Floating Glass Metric HUD Chips */}
+        <FadeIn delay={700} className="pointer-events-auto absolute -top-2 left-2 md:left-8">
+          <div className="glass-hud-chip rounded-xl p-3.5 flex items-center gap-3 text-left shadow-2xl border border-sky-400/30">
+            <div className="w-9 h-9 rounded-lg bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400">
+              <span className="material-symbols-outlined text-lg">timer</span>
             </div>
-        </div>
+            <div>
+              <p className="text-[11px] text-sky-300 uppercase tracking-wider font-bold">Avg Response Time</p>
+              <p className="font-mono text-base font-bold text-white">3.2m <span className="text-xs text-emerald-400 font-normal">(-68% vs 911)</span></p>
+            </div>
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={900} className="pointer-events-auto absolute top-20 right-2 md:right-6">
+          <div className="glass-hud-chip rounded-xl p-3.5 flex items-center gap-3 text-left shadow-2xl border border-amber-400/30">
+            <div className="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400">
+              <span className="material-symbols-outlined text-lg">verified_user</span>
+            </div>
+            <div>
+              <p className="text-[11px] text-amber-200 uppercase tracking-wider font-bold">Active Verified</p>
+              <p className="font-mono text-base font-bold text-white">14.2k <span className="text-xs text-sky-300 font-normal">Citizens</span></p>
+            </div>
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={1100} className="pointer-events-auto absolute bottom-2 left-4 md:left-24">
+          <div className="glass-hud-chip rounded-xl p-3.5 flex items-center gap-3 text-left shadow-2xl border border-sky-400/30">
+            <div className="w-9 h-9 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400">
+              <span className="material-symbols-outlined text-lg">lock_clock</span>
+            </div>
+            <div>
+              <p className="text-[11px] text-emerald-300 uppercase tracking-wider font-bold">Encrypted Dispatch</p>
+              <p className="font-mono text-base font-bold text-white">Zero-Knowledge SOS</p>
+            </div>
+          </div>
+        </FadeIn>
       </div>
     </section>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Features Preview                                                  */
+/*  Product Preview: Tactical Radar & Incident Card                   */
 /* ------------------------------------------------------------------ */
 
 function ProductPreviewSection() {
   return (
-    <section id="features" className="relative py-28 px-6 bg-[#0a0d14]">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4 tracking-tight">Tactical Awareness. <span className="text-primary">Zero Latency.</span></h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">Advanced geospatial telemetry meets instantaneous community dispatch.</p>
+    <section id="features" className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+      {/* Left: Futuristic Vector Radar Perimeter Map */}
+      <div className="lg:col-span-7 glass-tactical rounded-2xl overflow-hidden relative min-h-[420px] flex flex-col justify-between p-5 grid-tactical">
+        {/* Tactical Header */}
+        <div className="flex justify-between items-center z-10">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-mono text-xs uppercase tracking-wider text-sky-200">RADAR FREQUENCY: 915 MHZ</span>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-xs text-on-surface-variant bg-surface-container-low/70 px-2.5 py-1 rounded border border-outline-variant/40">
+            <span>GRID SEC: 44-ALPHA</span>
+            <span className="text-amber-400 font-bold">2 RESPONDERS IN RANGE</span>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-            <FadeIn delay={100}>
-                <div className="glass-tactical rounded-2xl p-8 h-full relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-sky-500/10 rounded-full blur-[80px]" />
-                    <span className="material-symbols-outlined text-[32px] text-sky-400 mb-6">radar</span>
-                    <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">Dynamic Radar Perimeter</h3>
-                    <p className="text-slate-400 leading-relaxed mb-6">Broadcast SOS signals within a calibrated geospatial radius. Instantly ping certified responders, off-duty medics, and verified neighbors in your immediate vicinity.</p>
-                    <ul className="space-y-3 font-mono text-[12px] text-slate-300">
-                        <li className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-emerald-400">check_circle</span> 500m - 5km selectable radius</li>
-                        <li className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-emerald-400">check_circle</span> Real-time responder tracking</li>
-                    </ul>
-                </div>
-            </FadeIn>
-
-            <FadeIn delay={300}>
-                <div className="glass-tactical rounded-2xl p-8 h-full relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-[80px]" />
-                    <span className="material-symbols-outlined text-[32px] text-amber-400 mb-6">memory</span>
-                    <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">AI Crisis Triage</h3>
-                    <p className="text-slate-400 leading-relaxed mb-6">Powered by Google Gemini, incidents are automatically analyzed to extract critical context, suggest immediate first-aid protocols, and categorize severity.</p>
-                    <ul className="space-y-3 font-mono text-[12px] text-slate-300">
-                        <li className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-emerald-400">check_circle</span> Automated threat categorization</li>
-                        <li className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-emerald-400">check_circle</span> Context-aware action plans</li>
-                    </ul>
-                </div>
-            </FadeIn>
+        {/* Center Tactical Radar Mesh */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="relative w-80 h-80 rounded-full border border-sky-500/20 flex items-center justify-center">
+            <div className="absolute w-64 h-64 rounded-full border border-sky-500/25" />
+            <div className="absolute w-44 h-44 rounded-full border border-sky-500/30" />
+            <div className="absolute w-24 h-24 rounded-full border border-sky-500/40 bg-sky-500/5" />
+            {/* Crosshairs */}
+            <div className="absolute w-full h-[1px] bg-gradient-to-r from-transparent via-sky-400/30 to-transparent" />
+            <div className="absolute h-full w-[1px] bg-gradient-to-b from-transparent via-sky-400/30 to-transparent" />
+            {/* Radar Sweep */}
+            <div className="absolute inset-0 radar-sweeper flex items-center justify-center">
+              <div className="w-1/2 h-1/2 origin-bottom-right" style={{ background: 'conic-gradient(from 0deg at 100% 100%, rgba(56, 189, 248, 0.25) 0deg, transparent 60deg)' }} />
+            </div>
+            {/* Central Incident Pin */}
+            <div className="relative z-20 flex flex-col items-center">
+              <div className="w-11 h-11 bg-amber-500 rounded-full rounded-br-none rotate-45 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.6)] border border-amber-200/50">
+                <span className="material-symbols-outlined -rotate-45 text-[#120e06] text-xl font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>medical_services</span>
+              </div>
+              <div className="w-4 h-1.5 bg-amber-500/40 rounded-[50%] mt-1 blur-[1px]" />
+            </div>
+            {/* Ping Node 1 */}
+            <div className="absolute top-16 right-20 flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-sky-400 ring-4 ring-sky-400/20 animate-pulse" />
+              <span className="font-mono text-[11px] text-sky-200 bg-surface-container-lowest/80 px-2 py-0.5 rounded border border-sky-400/30">Sarah J. (300m)</span>
+            </div>
+            {/* Ping Node 2 */}
+            <div className="absolute bottom-16 left-24 flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20" />
+              <span className="font-mono text-[11px] text-emerald-200 bg-surface-container-lowest/80 px-2 py-0.5 rounded border border-emerald-400/30">Station AED #04</span>
+            </div>
+          </div>
         </div>
+
+        {/* Bottom Live Status */}
+        <div className="z-10 mt-auto pt-4">
+          <div className="glass-tactical rounded-xl p-3 border border-sky-500/25 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+              <div>
+                <p className="text-xs text-primary uppercase font-bold tracking-wider">Live Response Perimeter</p>
+                <p className="font-mono text-xs text-white">Locating nearest verified AED &amp; CPR certified citizen...</p>
+              </div>
+            </div>
+            <span className="font-mono text-xs text-sky-400 bg-sky-500/10 px-2 py-1 rounded border border-sky-500/20">GPS LOCK 99.8%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right: Tactical Incident Summary Card */}
+      <div className="lg:col-span-5 glass-tactical rounded-2xl p-6 flex flex-col justify-between gap-6 border-t border-sky-400/30 shadow-2xl">
+        <div>
+          {/* Incident Alert Banner */}
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded bg-red-500/20 border border-red-500/40 text-red-300 text-xs uppercase tracking-wider font-bold">
+                MEDICAL PRIORITY 1
+              </span>
+            </div>
+            <span className="font-mono text-xs text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded">
+              00:42 ELAPSED
+            </span>
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-1">Cardiac Event</h3>
+          <p className="text-base text-sky-200/80 flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-sm text-sky-400">near_me</span>
+            <span>300m away · Floor 4, Suite 402</span>
+          </p>
+        </div>
+
+        {/* Active Responder Card */}
+        <div className="bg-surface-container-low/90 rounded-xl p-3.5 flex items-center gap-3 border border-sky-400/20 shadow-inner">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg border-2 border-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.4)]">
+              SJ
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[#0a0d14] flex items-center justify-center">
+              <span className="material-symbols-outlined text-[10px] text-white">check</span>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-base text-white font-bold truncate">Sarah Jenkins</p>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">RN</span>
+            </div>
+            <p className="font-mono text-xs text-amber-400 font-medium">ETA: 1 min · En Route</p>
+          </div>
+          <div className="glossy-btn bg-primary-container px-3 py-1.5 rounded-lg border border-primary/40 shadow-sm">
+            <span className="text-xs text-sky-200 font-bold tracking-wider">CPR CERT</span>
+          </div>
+        </div>
+
+        {/* Dispatch Logs Console */}
+        <div className="bg-surface-container-lowest/90 p-3.5 rounded-xl border border-outline-variant/30 font-mono text-xs space-y-1.5">
+          <div className="flex items-center justify-between text-on-surface-variant border-b border-white/5 pb-1">
+            <span>TELEMETRY LOGS</span>
+            <span className="text-emerald-400">DISPATCH ENCRYPTED</span>
+          </div>
+          <p className="text-sky-300/90">&gt; SOS packet verified via zero-knowledge mesh</p>
+          <p className="text-sky-300/90">&gt; Auto-dispatched AED map routing to Sarah J.</p>
+          <p className="text-amber-400">&gt; Building security notified: Elevator 2 unlocked</p>
+          <p className="text-on-surface-variant">&gt; Standby for vitals input telemetry...</p>
+        </div>
+
+        <button className="w-full glossy-btn glossy-btn-amber py-3 rounded-xl text-base font-bold flex items-center justify-center gap-2 shadow-lg">
+          <span className="material-symbols-outlined text-lg">chat</span>
+          Direct Encrypted Channel
+        </button>
       </div>
     </section>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  How It Works Section                                               */
+/*  Telemetry Protocol (How It Works)                                 */
 /* ------------------------------------------------------------------ */
 
-const steps = [
-  {
-    number: "01",
-    title: "TRIGGER SOS",
-    description: "One tap activates the beacon, broadcasting your exact coordinates.",
-    icon: "emergency_home",
-    color: "text-red-400",
-  },
-  {
-    number: "02",
-    title: "MESH BROADCAST",
-    description: "Alert securely ripples to verified responders in your perimeter.",
-    icon: "cell_tower",
-    color: "text-sky-400",
-  },
-  {
-    number: "03",
-    title: "RAPID DISPATCH",
-    description: "Responders accept and are routed via live tactical map.",
-    icon: "directions_run",
-    color: "text-amber-400",
-  },
-  {
-    number: "04",
-    title: "INCIDENT RESOLVE",
-    description: "Situation stabilized. Secure chat logs and debrief filed.",
-    icon: "verified",
-    color: "text-emerald-400",
-  },
-];
-
 function HowItWorksSection() {
-  return (
-    <section id="how-it-works" className="relative py-28 px-6 border-t border-white/5 bg-[#0a0d14]">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4 tracking-tight">Telemetry Track</h2>
-            <p className="text-slate-400 max-w-xl mx-auto font-mono text-sm">CRITICAL INCIDENT LIFECYCLE</p>
-        </div>
+  const steps = [
+    {
+      number: "01",
+      title: "Trigger",
+      icon: "touch_app",
+      description: "One tap initiates an ultra-low latency local SOS broadcast to the nearest grid.",
+      borderColor: "border-sky-400/30 hover:border-sky-400/50",
+      hoverGlow: "group-hover:border-sky-400 group-hover:shadow-[0_0_20px_rgba(56,189,248,0.4)]",
+      numberColor: "text-sky-300",
+    },
+    {
+      number: "02",
+      title: "Broadcast",
+      icon: "sensors",
+      description: "Alerts ping nearby qualified responders within 500 meters instantly.",
+      borderColor: "border-sky-400/30 hover:border-sky-400/50",
+      hoverGlow: "group-hover:border-sky-400 group-hover:shadow-[0_0_20px_rgba(56,189,248,0.4)]",
+      numberColor: "text-sky-300",
+    },
+    {
+      number: "03",
+      title: "Respond",
+      icon: "navigation",
+      description: "Available neighbors accept and receive real-time indoor or street guidance.",
+      borderColor: "border-amber-400/30 hover:border-amber-400/50",
+      hoverGlow: "group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]",
+      numberColor: "text-amber-300",
+    },
+    {
+      number: "04",
+      title: "Assist",
+      icon: "health_and_safety",
+      description: "Critical aid and AED equipment arrive 5-8 minutes before municipal sirens.",
+      borderColor: "border-emerald-400/30 hover:border-emerald-400/50",
+      hoverGlow: "group-hover:border-emerald-400 group-hover:shadow-[0_0_20px_rgba(52,211,153,0.4)]",
+      numberColor: "text-emerald-300",
+    },
+  ];
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-          {/* Connecting line for desktop */}
-          <div className="hidden lg:block absolute top-[40px] left-[10%] right-[10%] h-[1px] bg-gradient-to-r from-red-500/20 via-sky-500/20 to-emerald-500/20 z-0" />
-          
+  return (
+    <section id="how-it-works" className="flex flex-col gap-10 mt-4">
+      <div className="text-center max-w-2xl mx-auto">
+        <div className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-primary mb-2">
+          <span className="material-symbols-outlined text-sm">hub</span>
+          <span>TELEMETRY PROTOCOL</span>
+        </div>
+        <h2 className="text-3xl font-bold text-white">Rapid Deployment Protocol</h2>
+        <p className="text-base text-on-surface-variant mt-2">Engineered for sub-minute response using localized peer discovery.</p>
+      </div>
+
+      {/* Connected Telemetry Track */}
+      <div className="relative pt-6 pb-2">
+        <div className="hidden md:block absolute top-[52px] left-[10%] right-[10%] h-[2px] bg-gradient-to-r from-sky-500/20 via-sky-400 to-amber-500/40 z-0" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
           {steps.map((step, i) => (
-            <FadeIn key={step.number} delay={i * 150} className="relative z-10">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-20 h-20 rounded-full glass-tactical flex items-center justify-center mb-6 relative">
-                    <span className={`material-symbols-outlined text-[32px] ${step.color}`}>{step.icon}</span>
-                    <div className="absolute -bottom-3 px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] font-mono text-slate-300">
-                        STEP {step.number}
-                    </div>
+            <FadeIn key={step.number} delay={i * 150}>
+              <div className={`glass-tactical rounded-2xl p-6 flex flex-col items-center text-center group ${step.borderColor} transition-all duration-300`}>
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-surface-container border border-sky-400/30 ${step.hoverGlow} transition-all`}>
+                  <span className={`font-mono text-base font-bold ${step.numberColor}`}>{step.number}</span>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">{step.title}</h3>
-                <p className="text-sm text-slate-400">{step.description}</p>
+                <h4 className="text-lg font-bold text-white mb-1.5 flex items-center gap-1.5">
+                  <span>{step.title}</span>
+                  <span className={`material-symbols-outlined text-sm ${step.numberColor}`}>{step.icon}</span>
+                </h4>
+                <p className="text-sm text-on-surface-variant leading-relaxed">{step.description}</p>
               </div>
             </FadeIn>
           ))}
@@ -282,70 +417,44 @@ function HowItWorksSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Trust / Security Section                                          */
+/*  Trust & Security Section                                          */
 /* ------------------------------------------------------------------ */
 
 function SecuritySection() {
-    return (
-        <section id="security" className="relative py-28 px-6 border-t border-white/5 bg-[#080a0f]">
-            <div className="max-w-6xl mx-auto">
-                <div className="flex flex-col md:flex-row items-center gap-12">
-                    <div className="flex-1">
-                        <FadeIn>
-                            <h2 className="text-3xl sm:text-4xl font-black text-white mb-6 tracking-tight">Security-First Architecture</h2>
-                            <p className="text-slate-400 mb-8 leading-relaxed">
-                                We treat your data and location with military-grade precision. Every interaction is authenticated, encrypted, and designed to protect citizen privacy while enabling rapid response.
-                            </p>
-                            <ul className="space-y-4">
-                                <li className="flex items-start gap-3">
-                                    <span className="material-symbols-outlined text-emerald-400 mt-1">shield_lock</span>
-                                    <div>
-                                        <div className="font-bold text-white">Incognito Shield</div>
-                                        <div className="text-sm text-slate-400">Precise location masked until dispatch is mutually accepted.</div>
-                                    </div>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="material-symbols-outlined text-emerald-400 mt-1">policy</span>
-                                    <div>
-                                        <div className="font-bold text-white">Verified Responder Credentials</div>
-                                        <div className="text-sm text-slate-400">Medical and tactical skills are vetted before gaining 'Guardian' status.</div>
-                                    </div>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="material-symbols-outlined text-emerald-400 mt-1">lock</span>
-                                    <div>
-                                        <div className="font-bold text-white">JWT & Role-Based Auth</div>
-                                        <div className="text-sm text-slate-400">Strict API access controls prevent unauthorized telemetry scraping.</div>
-                                    </div>
-                                </li>
-                            </ul>
-                        </FadeIn>
-                    </div>
-                    <div className="flex-1 w-full">
-                        <FadeIn delay={200}>
-                            <div className="glass-panel p-6 rounded-2xl border border-white/10 relative">
-                                <div className="absolute top-0 right-0 p-3">
-                                    <span className="material-symbols-outlined text-slate-600 text-[48px]">security</span>
-                                </div>
-                                <div className="font-mono text-[12px] text-slate-400 space-y-2">
-                                    <div><span className="text-sky-400">sys</span>.<span className="text-emerald-400">auth</span> = <span className="text-amber-300">"VERIFIED"</span></div>
-                                    <div><span className="text-sky-400">sys</span>.<span className="text-emerald-400">encryption</span> = <span className="text-amber-300">"AES-256-GCM"</span></div>
-                                    <div><span className="text-sky-400">sys</span>.<span className="text-emerald-400">privacy_mode</span> = <span className="text-amber-300">true</span></div>
-                                    <div className="mt-4 pt-4 border-t border-white/10 text-slate-500">
-                                        // Establishing secure socket connection...<br/>
-                                        // Handshake complete.<br/>
-                                        // Awaiting trigger...
-                                    </div>
-                                </div>
-                            </div>
-                        </FadeIn>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
-}
+  return (
+    <section id="security" className="grid grid-cols-1 md:grid-cols-3 gap-10 mt-6 pt-16 border-t border-primary/10">
+      <FadeIn delay={100}>
+        <div className="glass-tactical rounded-2xl p-6 flex flex-col gap-3 h-full">
+          <div className="w-12 h-12 rounded-xl glossy-btn bg-primary-container flex items-center justify-center shadow-lg border border-primary/30">
+            <span className="material-symbols-outlined text-sky-400">verified_user</span>
+          </div>
+          <h4 className="text-lg font-bold text-white">Skill-matched responders</h4>
+          <p className="text-base text-on-surface-variant leading-relaxed">Our protocol filters alerts based on certified credentials (CPR, Stop The Bleed, BLS) ensuring the right person arrives.</p>
+        </div>
+      </FadeIn>
 
+      <FadeIn delay={250}>
+        <div className="glass-tactical rounded-2xl p-6 flex flex-col gap-3 h-full">
+          <div className="w-12 h-12 rounded-xl glossy-btn bg-secondary-container flex items-center justify-center shadow-lg border border-secondary/20">
+            <span className="material-symbols-outlined text-amber-400">history</span>
+          </div>
+          <h4 className="text-lg font-bold text-white">Rated response history</h4>
+          <p className="text-base text-on-surface-variant leading-relaxed">Community trust is anchored in verified reliability records, response latency tracking, and certified peer endorsements.</p>
+        </div>
+      </FadeIn>
+
+      <FadeIn delay={400}>
+        <div className="glass-tactical rounded-2xl p-6 flex flex-col gap-3 h-full">
+          <div className="w-12 h-12 rounded-xl glossy-btn bg-surface-container-highest flex items-center justify-center shadow-lg border border-outline-variant/50">
+            <span className="material-symbols-outlined text-emerald-400">lock</span>
+          </div>
+          <h4 className="text-lg font-bold text-white">Anonymous mode, enforced server-side</h4>
+          <p className="text-base text-on-surface-variant leading-relaxed">Precise GPS coordinates are cryptographically unlocked only upon accepted dispatch. Personal identities remain shielded.</p>
+        </div>
+      </FadeIn>
+    </section>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /*  Footer                                                             */
@@ -353,17 +462,24 @@ function SecuritySection() {
 
 function Footer() {
   return (
-    <footer className="border-t border-white/10 bg-[#05070c] py-10 px-6">
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>explore</span>
-          <span className="text-white font-extrabold text-sm tracking-tight">NEARHELP</span>
+    <footer className="bg-[#0a0d14] w-full py-16 border-t border-primary/10 mt-16">
+      <div className="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto gap-6 md:gap-0">
+        <div className="flex items-center gap-2 text-2xl font-bold text-white">
+          <div className="w-6 h-6 rounded bg-gradient-to-tr from-amber-500 to-sky-400 flex items-center justify-center p-[1px]">
+            <div className="w-full h-full bg-[#0a0d14] rounded-[3px] flex items-center justify-center">
+              <span className="material-symbols-outlined text-amber-400 text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>emergency</span>
+            </div>
+          </div>
+          <span>NearHelp</span>
         </div>
-        <p className="text-xs text-slate-500 text-center font-mono">
-          STATUS: <span className="text-emerald-500">OPERATIONAL</span> · DEMO BUILD
-        </p>
-        <div className="text-xs text-slate-600 font-mono">
-          © {new Date().getFullYear()} NEARHELP
+        <div className="flex flex-wrap justify-center gap-4 md:gap-6 text-base">
+          <a className="text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+          <a className="text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Terms of Service</a>
+          <a className="text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Contact</a>
+          <a className="text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Community Guidelines</a>
+        </div>
+        <div className="text-base text-on-surface-variant text-sm font-mono">
+          © {new Date().getFullYear()} NearHelp Emergency Response. All rights reserved.
         </div>
       </div>
     </footer>
@@ -383,12 +499,19 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-on-background selection:bg-primary/20">
-      <Navbar onGetStarted={handleGetStarted} isLoggedIn={!!user} />
-      <HeroSection onGetStarted={handleGetStarted} isLoggedIn={!!user} />
-      <ProductPreviewSection />
-      <HowItWorksSection />
-      <SecuritySection />
+    <div className="bg-background text-on-background min-h-screen ambient-cyber-bg antialiased selection:bg-primary-container selection:text-on-primary-container relative overflow-x-hidden">
+      <Navbar
+        onSignIn={() => navigate('/auth')}
+        onSignUp={() => navigate('/auth')}
+        onGetStarted={handleGetStarted}
+        isLoggedIn={!!user}
+      />
+      <main className="pt-[90px] pb-16 px-4 md:px-8 max-w-7xl mx-auto flex flex-col gap-16 md:gap-24 relative z-10">
+        <HeroSection onGetStarted={handleGetStarted} isLoggedIn={!!user} />
+        <ProductPreviewSection />
+        <HowItWorksSection />
+        <SecuritySection />
+      </main>
       <Footer />
     </div>
   );

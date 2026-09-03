@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -491,5 +492,32 @@
     background-color: #1e293b;
     border-color: rgba(255, 255, 255, 0.22);
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+
+  /* 3D Perspective Stage for Globe/Terrain */
+  .perspective-stage {
+    perspective: 800px;
+    perspective-origin: 50% 45%;
+  }
+
+  /* Holographic Arc Beam animation */
+  .arc-beam {
+    stroke-dasharray: 6 3;
+    animation: dashFlow 1.8s linear infinite;
+  }
+  @keyframes dashFlow {
+    from { stroke-dashoffset: 24; }
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* Profile Hero Avatar Ring */
+  .hero-avatar-ring {
+    position: relative;
+    padding: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, rgba(181, 200, 227, 0.9), rgba(231, 191, 151, 0.8), rgba(99, 102, 241, 0.5));
+    box-shadow: 
+      0 0 32px rgba(181, 200, 227, 0.3),
+      0 0 60px rgba(231, 191, 151, 0.15);
   }
 }
