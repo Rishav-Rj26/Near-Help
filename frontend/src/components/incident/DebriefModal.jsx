@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Star, CheckCircle, XCircle, ClipboardList } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { CheckCircle, XCircle, ClipboardList } from 'lucide-react';
 import { submitDebrief, rateResponder } from '../../services/api';
 
 export default function DebriefModal({ incidentId, questions, responders, onClose }) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Users, MessageCircle, CheckCircle, Zap, MapPin, Phone } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { motion } from 'framer-motion';
+import { X, Users, MessageCircle, CheckCircle, Zap, MapPin } from 'lucide-react';
+import { useAuth } from '../../context/auth-context';
 import { socketService } from '../../services/socket';
 
 import ChatThread from './ChatThread';
@@ -20,7 +20,6 @@ const CRISIS_COLORS = {
 export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
   const { user } = useAuth();
   const [responders, setResponders] = useState(incident.responders || []);
-  const [hasJoined, setHasJoined] = useState(false);
   const [activeChatResponderId, setActiveChatResponderId] = useState(null);
   const [aiGuidance, setAiGuidance] = useState(incident.aiGuidance || null);
   const [aiSummary, setAiSummary] = useState(incident.aiSummary || null);
@@ -29,13 +28,11 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
 
   const incidentId = incident.incidentId || incident._id;
   const isBroadcaster = incident.broadcaster?.toString() === user?.id || incident.broadcaster === user?.id;
+  const hasJoined = responders.some((responder) => (
+    responder.user?.toString() === user?.id || responder.user === user?.id || responder.id === user?.id
+  ));
+  const chatResponderId = !isBroadcaster && hasJoined ? user?.id : activeChatResponderId;
   const colors = CRISIS_COLORS[incident.crisisType] || CRISIS_COLORS.other;
-
-  useEffect(() => {
-    const already = responders.some(r => (r.user?.toString() === user?.id) || (r.user === user?.id) || (r.id === user?.id));
-    setHasJoined(already);
-    if (already && !isBroadcaster) setActiveChatResponderId(user.id);
-  }, [responders, user, isBroadcaster]);
 
   useEffect(() => {
     const handle = (data) => {
@@ -174,7 +171,7 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
         )}
 
         {/* Chat */}
-        {activeChatResponderId && (
+        {chatResponderId && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <MessageCircle className="w-4 h-4 text-indigo-400" />
@@ -184,7 +181,7 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
             </div>
             <ChatThread
               incidentId={incidentId}
-              responderId={activeChatResponderId}
+              responderId={chatResponderId}
               currentUserId={user.id}
               isAnonymous={incident.isAnonymous}
               broadcasterId={incident.broadcaster?.toString() || incident.broadcaster}
@@ -208,7 +205,7 @@ export default function ActiveIncidentPanel({ incident, onClose, onResolved }) {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => { socketService.joinAsResponder(incidentId); setHasJoined(true); setActiveChatResponderId(user.id); }}
+              onClick={() => { socketService.joinAsResponder(incidentId); setActiveChatResponderId(user.id); }}
               className="w-full py-3.5 rounded-xl gradient-brand text-white font-bold text-sm tracking-wide shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
             >
               <Zap className="w-4 h-4" />

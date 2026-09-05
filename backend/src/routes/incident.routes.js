@@ -23,10 +23,9 @@ router.get('/nearby', protect, async (req, res) => {
     // PII Stripping for anonymous incidents in the API response
     const sanitizedIncidents = incidents.map(incident => {
       const incObj = incident.toObject();
-      if (incObj.isAnonymous) {
+      if (incObj.isAnonymous && incObj.broadcaster.toString() !== req.user.id) {
         incObj.broadcasterName = 'Anonymous reporter';
-        // We don't have broadcaster populated here yet, but if we did, we'd strip it.
-        // We ensure we don't leak anything.
+        delete incObj.broadcaster;
       }
       return incObj;
     });
@@ -96,8 +95,8 @@ router.get('/:id', protect, async (req, res) => {
     const isAdmin = req.user.role === 'admin';
     
     if (incObj.isAnonymous && !isBroadcaster && !isAdmin) {
-      incObj.broadcaster.name = 'Anonymous reporter';
-      delete incObj.broadcaster.avatarUrl;
+      incObj.broadcasterName = 'Anonymous reporter';
+      delete incObj.broadcaster;
     }
 
     res.json(incObj);
@@ -127,6 +126,12 @@ router.post('/:id/debrief', protect, async (req, res) => {
 
     if (!isBroadcaster && !isAdmin) {
       return res.status(403).json({ message: 'Not authorized to submit debrief' });
+    }
+    if (incident.status !== 'resolved') {
+      return res.status(409).json({ message: 'An incident must be resolved before its debrief is submitted' });
+    }
+    if (incident.debrief?.submittedAt) {
+      return res.status(409).json({ message: 'A debrief has already been submitted for this incident' });
     }
 
     incident.debrief = {
@@ -181,12 +186,16 @@ router.patch('/:id/responders/:responderId/rating', protect, async (req, res) =>
     if (!isBroadcaster && !isAdmin) {
       return res.status(403).json({ message: 'Not authorized to rate responders' });
     }
+    if (incident.status !== 'resolved') {
+      return res.status(409).json({ message: 'Responders can be rated only after the incident is resolved' });
+    }
 
     const responderEntry = incident.responders.find(r => r.user.toString() === responderId);
     if (!responderEntry) {
       return res.status(404).json({ message: 'Responder not found in incident' });
     }
 
+    const previousRating = responderEntry.rating;
     responderEntry.rating = rating;
     await incident.save();
 
@@ -198,9 +207,12 @@ router.patch('/:id/responders/:responderId/rating', protect, async (req, res) =>
       const oldCount = responderUser.trust.responseCount || 0;
       const oldAvg = responderUser.trust.avgRating || 0;
       
-      const newAvg = (oldAvg * oldCount + rating) / (oldCount + 1);
-      
-      responderUser.trust.responseCount = oldCount + 1;
+      const newCount = previousRating ? oldCount : oldCount + 1;
+      const newAvg = previousRating && oldCount > 0
+        ? (oldAvg * oldCount - previousRating + rating) / oldCount
+        : (oldAvg * oldCount + rating) / newCount;
+
+      responderUser.trust.responseCount = newCount;
       responderUser.trust.avgRating = newAvg;
       await responderUser.save();
     }

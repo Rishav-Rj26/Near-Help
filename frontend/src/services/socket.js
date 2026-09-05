@@ -1,6 +1,9 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// VITE_API_URL is the REST base (for example, http://localhost:3001/api).
+// Socket.IO is served from the server origin, not beneath the REST prefix.
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const SOCKET_URL = new URL(API_URL, window.location.origin).origin;
 
 class SocketService {
   constructor() {
@@ -174,6 +177,12 @@ class SocketService {
   onError(callback) {
     if (this.socket) {
       this.socket.on('error', callback);
+    }
+  }
+
+  offError(callback) {
+    if (this.socket) {
+      this.socket.off('error', callback);
     }
   }
 

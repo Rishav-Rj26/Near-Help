@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import {
   fetchActiveIncidents,
   fetchAnalytics,
@@ -26,7 +26,6 @@ export default function AdminDashboardPage() {
 
   const loadData = useCallback(async () => {
     try {
-      setLoading(true);
       const [a, i, u] = await Promise.all([fetchAnalytics(), fetchActiveIncidents(), fetchFlaggedUsers()]);
       setAnalytics(a.data);
       setActiveIncidents(i.data);

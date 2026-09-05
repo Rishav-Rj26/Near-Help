@@ -13,6 +13,7 @@ import { socketService } from '../../services/socket';
 export default function ResponderMarkerLayer({ incidentId }) {
   // Map of responderId -> { coordinates: [lng, lat], timestamp }
   const [responderPositions, setResponderPositions] = useState({});
+  const [currentTime, setCurrentTime] = useState(Date.now);
   const staleTimerRef = useRef(null);
 
   useEffect(() => {
@@ -30,9 +31,9 @@ export default function ResponderMarkerLayer({ incidentId }) {
 
     socketService.onResponderLocationUpdate(handleLocationUpdate);
 
-    // Check for stale markers every 10 seconds
+    // Re-evaluate marker freshness every 10 seconds without reading the clock in render.
     staleTimerRef.current = setInterval(() => {
-      setResponderPositions((prev) => ({ ...prev })); // trigger re-render to re-evaluate staleness
+      setCurrentTime(Date.now());
     }, 10000);
 
     return () => {
@@ -67,7 +68,8 @@ export default function ResponderMarkerLayer({ incidentId }) {
     <>
       {Object.entries(responderPositions).map(([responderId, data]) => {
         const [lng, lat] = data.coordinates;
-        const secondsSinceUpdate = (Date.now() - new Date(data.timestamp).getTime()) / 1000;
+        const timestamp = new Date(data.timestamp).getTime();
+        const secondsSinceUpdate = Number.isFinite(timestamp) ? Math.max(0, (currentTime - timestamp) / 1000) : Infinity;
         const isStale = secondsSinceUpdate > 60;
         const icon = createResponderIcon(isStale);
 

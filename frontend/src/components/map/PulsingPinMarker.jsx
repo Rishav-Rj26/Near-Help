@@ -1,7 +1,6 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { renderToString } from 'react-dom/server';
 
 const CRISIS_COLORS = {
   medical: 'rgba(59, 130, 246, 1)',   // blue-500
@@ -18,7 +17,7 @@ export default function PulsingPinMarker({ incident, onClick }) {
 
   const color = CRISIS_COLORS[crisisType] || CRISIS_COLORS.other;
   
-  // Create a pulsing CSS animation dynamically since it's hard to use Tailwind arbitrary keyframes inside renderToString for Leaflet
+  // Leaflet markers use a small HTML fragment so their pulse animation remains self-contained.
   const styleStr = `
     <style>
       @keyframes pulseRing {

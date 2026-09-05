@@ -37,22 +37,19 @@ export const createAndBroadcastIncident = async ({
 
   // 1. Trust check: load user to see if they are suspended
   const userDoc = await User.findById(broadcasterUserId).select('trust name avatarUrl');
+  if (!userDoc) {
+    const err = new Error('User account was not found.');
+    err.code = 'NOT_FOUND';
+    throw err;
+  }
   if (userDoc?.trust?.isSuspended) {
     const err = new Error('Your account is suspended due to excessive false alerts. You cannot trigger SOS.');
     err.code = 'SUSPENDED';
     throw err;
   }
 
-  // 2. Basic Rate Limiting: 30s per user
-  const lastTrigger = triggerThrottleMap.get(broadcasterUserId);
-  if (lastTrigger && Date.now() - lastTrigger < TRIGGER_THROTTLE_MS) {
-    const err = new Error('Please wait before triggering another SOS.');
-    err.code = 'RATE_LIMIT';
-    throw err;
-  }
-  triggerThrottleMap.set(broadcasterUserId, Date.now());
-
-  // 3. Duplicate SOS Prevention
+  // 2. Duplicate SOS prevention. Check this before consuming the throttle so a
+  // failed duplicate attempt does not prevent a later legitimate alert.
   const existingActive = await Incident.findOne({ broadcaster: broadcasterUserId, status: 'active' });
   if (existingActive) {
     const err = new Error('You already have an active SOS.');
@@ -60,6 +57,13 @@ export const createAndBroadcastIncident = async ({
     throw err;
   }
 
+  // 3. Basic rate limiting: 30s per user.
+  const lastTrigger = triggerThrottleMap.get(broadcasterUserId);
+  if (lastTrigger && Date.now() - lastTrigger < TRIGGER_THROTTLE_MS) {
+    const err = new Error('Please wait before triggering another SOS.');
+    err.code = 'RATE_LIMIT';
+    throw err;
+  }
   // 4. Create Incident
   const incident = await Incident.create({
     broadcaster: broadcasterUserId,
@@ -69,6 +73,7 @@ export const createAndBroadcastIncident = async ({
     isAnonymous,
     details,
   });
+  triggerThrottleMap.set(broadcasterUserId, Date.now());
 
   // 5. Find nearby users
   const nearbyUsers = await findUsersNear(coordinates.lng, coordinates.lat, incident.radius);

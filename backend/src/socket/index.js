@@ -86,7 +86,9 @@ export const initSocket = (server) => {
         socket.join(`incident:${incident._id}`);
 
         // Emit success back to broadcaster
-        socket.emit('sos:triggered', { ...emitPayload, notifiedCount });
+        // The owner needs its id to render owner-only controls. This value is
+        // intentionally never included in the nearby-user broadcast payload.
+        socket.emit('sos:triggered', { ...emitPayload, broadcaster: broadcasterId, notifiedCount });
         console.log(`SOS triggered by ${broadcasterId}, notified ${notifiedCount} users`);
 
       } catch (err) {

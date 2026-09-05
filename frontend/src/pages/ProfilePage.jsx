@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { fetchCurrentUser, updateUserSkills } from '../services/api';
 
 const VALID_SKILLS = [
@@ -24,9 +24,7 @@ export default function ProfilePage() {
   const [incognito, setIncognito] = useState(true);
   const [radius, setRadius] = useState('1km');
 
-  useEffect(() => { loadProfile(); }, []);
-
-  const loadProfile = async () => {
+  async function loadProfile() {
     try {
       const { data } = await fetchCurrentUser();
       setProfile(data.user);
@@ -34,7 +32,9 @@ export default function ProfilePage() {
       setSkills(data.user.skills || []);
     } catch (err) { console.error('Profile load failed:', err); }
     finally { setLoading(false); }
-  };
+  }
+
+  useEffect(() => { loadProfile(); }, []);
 
   const toggleSkill = async (skillName) => {
     const newSkills = skills.includes(skillName) ? skills.filter(s => s !== skillName) : [...skills, skillName];
@@ -113,7 +113,9 @@ export default function ProfilePage() {
             </h2>
             <p className="text-xs text-on-surface-variant flex items-center justify-center gap-1">
               <span className="material-symbols-outlined text-[13px] text-primary">calendar_month</span>
-              Active Neighbor since {new Date(profile?.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+              Active Neighbor since {profile?.createdAt
+                ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                : 'Unknown'}
             </p>
           </div>
 

@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import 'leaflet/dist/leaflet.css';
 
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { socketService } from '../services/socket';
 import { fetchNearbyIncidents, updateUserLocation } from '../services/api';
 
@@ -35,8 +35,31 @@ export default function MapPage() {
 
   const locationIntervalRef = useRef(null);
   const locationRef = useRef(location);
+  const selectedIncidentRef = useRef(selectedIncident);
 
   useEffect(() => { locationRef.current = location; }, [location]);
+  useEffect(() => { selectedIncidentRef.current = selectedIncident; }, [selectedIncident]);
+
+  const refreshNearbyIncidents = useCallback(async (lng, lat) => {
+    try {
+      const { data } = await fetchNearbyIncidents(lng, lat, 5000);
+      setIncidents(data);
+    } catch (err) {
+      console.error('Nearby incident refresh failed', err);
+      setLocationError('Unable to refresh nearby incidents.');
+    }
+  }, []);
+
+  const handleLocationUpdate = useCallback(async (lat, lng) => {
+    setLocation({ lat, lng });
+    try {
+      await updateUserLocation(lng, lat);
+      await refreshNearbyIncidents(lng, lat);
+    } catch (err) {
+      console.error('Location update failed', err);
+      setLocationError('Unable to refresh nearby incidents.');
+    }
+  }, [refreshNearbyIncidents]);
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
@@ -56,8 +79,9 @@ export default function MapPage() {
     }
 
     locationIntervalRef.current = setInterval(() => {
-      setIncidents(curr => curr);
-    }, 5000);
+      const currentLoc = locationRef.current;
+      refreshNearbyIncidents(currentLoc.lng, currentLoc.lat);
+    }, 30000);
 
     socketService.onSOSNew((incident) => setIncidents((prev) => [...prev, incident]));
     socketService.onSOSTriggered((incident) => {
@@ -66,8 +90,9 @@ export default function MapPage() {
       setSelectedIncident(incident);
     });
     socketService.onDebriefReady((data) => {
-      if (selectedIncident && (selectedIncident.incidentId || selectedIncident._id) === data.incidentId) {
-        setDebriefData({ incidentId: data.incidentId, questions: data.questions, responders: selectedIncident.responders || [] });
+      const currentIncident = selectedIncidentRef.current;
+      if (currentIncident && (currentIncident.incidentId || currentIncident._id) === data.incidentId) {
+        setDebriefData({ incidentId: data.incidentId, questions: data.questions, responders: currentIncident.responders || [] });
       }
     });
     socketService.onError((error) => {
@@ -82,7 +107,8 @@ export default function MapPage() {
         try {
           const { data } = await fetchNearbyIncidents(currentLoc.lng, currentLoc.lat, 5000);
           setIncidents(data);
-          if (selectedIncident) socketService.joinAsResponder(selectedIncident.incidentId || selectedIncident._id);
+          const currentIncident = selectedIncidentRef.current;
+          if (currentIncident) socketService.joinAsResponder(currentIncident.incidentId || currentIncident._id);
         } catch (err) { console.error('Reconnect fetch failed', err); }
       }
     };
@@ -92,31 +118,22 @@ export default function MapPage() {
       socketService.offSOSNew();
       socketService.offSOSTriggered();
       socketService.offDebriefReady();
+      socketService.offError();
       socketService.offReconnect(handleReconnect);
       if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
     };
-  }, [user, navigate, selectedIncident]);
+  }, [user, navigate, handleLocationUpdate, refreshNearbyIncidents]);
 
   useEffect(() => {
-    if (selectedIncident && user) {
+    const isBroadcaster = selectedIncident?.broadcaster?.toString() === user?.id || selectedIncident?.broadcaster === user?.id;
+    if (selectedIncident && user && !isBroadcaster) {
       const intervalId = setInterval(() => {
-        socketService.sendResponderLocation(selectedIncident.incidentId || selectedIncident._id, location.lng, location.lat);
+        const currentLoc = locationRef.current;
+        socketService.sendResponderLocation(selectedIncident.incidentId || selectedIncident._id, currentLoc.lng, currentLoc.lat);
       }, 4000);
       return () => clearInterval(intervalId);
     }
-  }, [selectedIncident, location, user]);
-
-  const handleLocationUpdate = async (lat, lng) => {
-    setLocation({ lat, lng });
-    try {
-      await updateUserLocation(lng, lat);
-      const { data } = await fetchNearbyIncidents(lng, lat, 5000);
-      setIncidents(data);
-    } catch (err) {
-      console.error('Location update failed', err);
-      setLocationError('Unable to refresh nearby incidents.');
-    }
-  };
+  }, [selectedIncident, user]);
 
   const handleTriggerSOS = (payload) => socketService.triggerSOS(payload);
 
